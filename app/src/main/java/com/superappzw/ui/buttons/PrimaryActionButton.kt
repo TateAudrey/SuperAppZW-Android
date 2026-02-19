@@ -1,6 +1,7 @@
 package com.superappzw.ui.buttons
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,7 +34,8 @@ fun PrimaryActionButton(
             .background(
                 color = MaterialTheme.colorScheme.primary,
                 shape = RoundedCornerShape(32.dp)
-            ),
+            )
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -44,6 +46,7 @@ fun PrimaryActionButton(
         )
     }
 }
+
 
 @Preview(showBackground = true, name = "PrimaryActionButton Preview")
 @Composable

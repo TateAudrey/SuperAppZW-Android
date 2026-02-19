@@ -1,5 +1,6 @@
 package com.superappzw.ui.onboarding
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,18 +16,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.superappzw.ui.buttons.PrimaryActionButton
 import com.superappzw.ui.utils.OnboardingCarousel
-import com.superappzw.viewModel.AppSessionViewModel
-import com.superappzw.viewModel.OnboardingViewModel
 import com.superappzw.R.drawable
 
 @Composable
 fun OnboardingScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onGetStartedClick: () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -36,13 +33,16 @@ fun OnboardingScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Logo
-        AsyncImage(
-            model = drawable.logo_text,
+
+        Image(
+            painter = painterResource(id = drawable.logo_text),
             contentDescription = "App Logo",
             modifier = Modifier
+                .padding(top = 32.dp)  // Top padding added
                 .size(150.dp, 100.dp)
                 .clip(RoundedCornerShape(15.dp))
         )
+
 
         // Carousel
         OnboardingCarousel(
@@ -67,7 +67,7 @@ fun OnboardingScreen(
         // CTA Button (does nothing for now)
         PrimaryActionButton(
             title = "Get Started",
-            onClick = { /* no action yet */ },
+            onClick = onGetStartedClick,
             modifier = Modifier
                 .padding(horizontal = 32.dp)  // <-- add horizontal padding
         )
