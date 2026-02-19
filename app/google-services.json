@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "229725757226",
+    "project_id": "super-app-zw-983d4",
+    "storage_bucket": "super-app-zw-983d4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:229725757226:android:a7bfc6ebd7612cee4f4853",
+        "android_client_info": {
+          "package_name": "com.superappzw"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "229725757226-o33rrm3cchbkfvroo2rmm4bael9m840q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzChYyjExhy4Gj3shFdCq7OOCugF2GKcw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "229725757226-o33rrm3cchbkfvroo2rmm4bael9m840q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "229725757226-cfpkd7ed6fsdrnjupfg8rg2o15qt86ft.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "audrey.chanakira.SuperAppZW"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
