@@ -16,8 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.superappzw.ui.buttons.PrimaryActionButton
-import com.superappzw.ui.utils.OnboardingCarousel
+import com.superappzw.ui.components.buttons.PrimaryActionButton
+import com.superappzw.ui.components.utils.OnboardingCarousel
 import com.superappzw.R.drawable
 
 @Composable

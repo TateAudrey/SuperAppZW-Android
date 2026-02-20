@@ -1,15 +1,9 @@
 package com.superappzw.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryColor
@@ -22,17 +16,17 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun SuperAppZWTheme(
-    darkTheme: Boolean = false, // force light mode
-    dynamicColor: Boolean = false, // disable dynamic colors
+    darkTheme: Boolean = false,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme // always use your custom LightColorScheme
+    val colorScheme = LightColorScheme // Define once
 
     MaterialTheme(
-        colorScheme = LightColorScheme,
-        typography = Typography,
+        colorScheme = colorScheme,  // Use the variable
+        typography = Typography,    // ✅ Your Futura fonts are here!
         content = content
     )
-
 }
+
 

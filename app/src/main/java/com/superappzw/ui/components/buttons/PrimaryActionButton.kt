@@ -1,4 +1,4 @@
-package com.superappzw.ui.buttons
+package com.superappzw.ui.components.buttons
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
