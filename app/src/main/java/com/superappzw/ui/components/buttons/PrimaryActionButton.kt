@@ -22,30 +22,48 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun PrimaryActionButton(
+    modifier: Modifier = Modifier,
     title: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    enabled: Boolean = true
+
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .shadow(8.dp, RoundedCornerShape(32.dp), ambientColor = Color.Black.copy(alpha = 0.15f))
+            .shadow(
+                elevation = if (enabled) 8.dp else 0.dp,
+                shape = RoundedCornerShape(32.dp),
+                ambientColor = Color.Black.copy(alpha = 0.15f)
+            )
             .background(
-                color = MaterialTheme.colorScheme.primary,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)  // ✅ GRAYED OUT
+                },
                 shape = RoundedCornerShape(32.dp)
             )
-            .clickable { onClick() },
+            .clickable(
+                enabled = enabled,  // ✅ DISABLES CLICKS!
+                onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = title,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = if (enabled) {
+                Color.White
+            } else {
+                Color.White.copy(alpha = 0.6f)  // ✅ DIMMED TEXT
+            }
         )
     }
 }
+
 
 
 @Preview(showBackground = true, name = "PrimaryActionButton Preview")

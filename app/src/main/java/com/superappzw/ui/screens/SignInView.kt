@@ -14,6 +14,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -46,6 +49,13 @@ fun SignInView(
     onResetClick: () -> Unit = {},
     navigateBack: () -> Unit
 ) {
+    val isFormValid by remember(viewModel.email, viewModel.password) {
+        derivedStateOf {
+            viewModel.email.trim().isNotEmpty() &&
+                    viewModel.password.isNotEmpty()
+        }
+    }
+
     SuperAppZWTheme {
         Box(modifier = modifier.fillMaxSize()) {
             Column(
@@ -132,6 +142,7 @@ fun SignInView(
                         // Replace Task { await viewModel.signUp() }
                         viewModel.signIn() // Add this method to ViewModel
                     },
+                    enabled = !viewModel.isLoading && isFormValid,
                     modifier = Modifier.padding(top = 16.dp)
                 )
 

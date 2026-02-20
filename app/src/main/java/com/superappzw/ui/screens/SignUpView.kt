@@ -14,6 +14,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -45,6 +48,19 @@ fun SignUpView(
     onSignInClick: () -> Unit = {},
     navigateBack: () -> Unit
 ) {
+
+    val isFormValid by remember(viewModel.firstName, viewModel.lastName, viewModel.email,
+        viewModel.password, viewModel.confirmPassword) {
+        derivedStateOf {
+            viewModel.firstName.trim().isNotEmpty() &&
+                    viewModel.lastName.trim().isNotEmpty() &&
+                    viewModel.email.trim().isNotEmpty() &&
+                    viewModel.password.isNotEmpty() &&
+                    viewModel.confirmPassword.isNotEmpty() &&
+                    viewModel.password == viewModel.confirmPassword
+        }
+    }
+
     SuperAppZWTheme {
         Box(modifier = modifier.fillMaxSize()) {
             Column(
@@ -143,6 +159,7 @@ fun SignUpView(
                 PrimaryActionButton(
                     title = "Create Account",
                     onClick = { viewModel.signUp() },
+                    enabled = !viewModel.isLoading && isFormValid,
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
