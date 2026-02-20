@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,16 +26,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.superappzw.R
 import com.superappzw.ui.components.buttons.PrimaryActionButton
 import com.superappzw.ui.components.textfields.EmailOnlyField
-import com.superappzw.ui.components.textfields.PasswordField
 import com.superappzw.ui.components.utils.AppAlert
 import com.superappzw.ui.components.utils.LoadingView
-import com.superappzw.ui.theme.FuturaBoldFamily
-import com.superappzw.ui.theme.FuturaBookFamily
 import com.superappzw.ui.theme.FuturaMediumFamily
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 import com.superappzw.viewModel.ForgotPasswordViewModel
-import com.superappzw.viewModel.SignInViewModel
 
 
 @Composable
@@ -101,7 +96,9 @@ fun ForgotPasswordView(
                 PrimaryActionButton(
                     title = "Request Password Reset",
                     onClick = {
-
+                        viewModel.requestPasswordReset(
+                            navigateBack
+                        )
                     },
                     modifier = Modifier.padding(top = 16.dp)
                 )
