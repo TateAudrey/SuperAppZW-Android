@@ -36,21 +36,13 @@ fun EmailOnlyField(
     placeholder: String,
     modifier: Modifier = Modifier
 ) {
-    var inputText by remember { mutableStateOf(text) }
-
-    // Filter to only allow email-safe characters
-    LaunchedEffect(inputText) {
-        val allowedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@._-"
-        val filtered = inputText.filter { allowedCharacters.contains(it) }
-        if (filtered != inputText) {
-            onTextChange(filtered)
-        }
-    }
-
     OutlinedTextField(
-        value = inputText,
+        value = text,  // Direct ViewModel binding
         onValueChange = { newValue ->
-            inputText = newValue
+            // Filter IMMEDIATELY in onValueChange
+            val allowedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@._-"
+            val filtered = newValue.filter { allowedCharacters.contains(it) }
+            onTextChange(filtered)  // Update ViewModel directly
         },
         placeholder = {
             Text(
@@ -85,6 +77,7 @@ fun EmailOnlyField(
         )
     )
 }
+
 
 @Preview(showBackground = true, backgroundColor = 0xFFF8F9FA)
 @Composable

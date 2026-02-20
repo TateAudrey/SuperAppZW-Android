@@ -36,13 +36,10 @@ fun PasswordField(
     placeholder: String,
     modifier: Modifier = Modifier
 ) {
-    var inputText by remember { mutableStateOf(text) }
-
     OutlinedTextField(
-        value = inputText,
+        value = text,  // Direct ViewModel binding
         onValueChange = { newValue ->
-            inputText = newValue
-            onTextChange(newValue)
+            onTextChange(newValue)  // Update ViewModel directly
         },
         placeholder = {
             Text(
@@ -78,6 +75,7 @@ fun PasswordField(
         )
     )
 }
+
 
 @Preview(showBackground = true, backgroundColor = 0xFFF8F9FA)
 @Composable

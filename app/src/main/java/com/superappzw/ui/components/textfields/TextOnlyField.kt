@@ -36,20 +36,12 @@ fun TextOnlyField(
     placeholder: String,
     modifier: Modifier = Modifier
 ) {
-    var inputText by remember { mutableStateOf(text) }
-
-    // Filter to only allow letters and spaces
-    LaunchedEffect(inputText) {
-        val filtered = inputText.filter { it.isLetter() || it == ' ' }
-        if (filtered != inputText) {
-            onTextChange(filtered)
-        }
-    }
-
     OutlinedTextField(
-        value = inputText,
+        value = text,  // Direct ViewModel binding
         onValueChange = { newValue ->
-            inputText = newValue
+            // Filter IMMEDIATELY in onValueChange
+            val filtered = newValue.filter { it.isLetter() || it == ' ' }
+            onTextChange(filtered)  // Update ViewModel directly
         },
         placeholder = {
             Text(
@@ -84,6 +76,7 @@ fun TextOnlyField(
         )
     )
 }
+
 
 @Preview(showBackground = true, backgroundColor = 0xFFF8F9FA)
 @Composable

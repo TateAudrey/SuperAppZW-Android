@@ -43,7 +43,6 @@ fun SignUpView(
     modifier: Modifier = Modifier,
     viewModel: SignUpViewModel = viewModel(),
     onSignInClick: () -> Unit = {},
-    onSignUpSuccess: () -> Unit = {},
     navigateBack: () -> Unit
 ) {
     SuperAppZWTheme {
@@ -143,7 +142,7 @@ fun SignUpView(
                 // Sign Up button
                 PrimaryActionButton(
                     title = "Create Account",
-                    onClick = onSignUpSuccess,
+                    onClick = { viewModel.signUp() },
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
