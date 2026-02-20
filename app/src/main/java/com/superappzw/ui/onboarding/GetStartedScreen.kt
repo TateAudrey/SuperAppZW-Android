@@ -35,7 +35,7 @@ fun GetStartedScreen(
     modifier: Modifier = Modifier,
     navigateToEmail: () -> Unit,
     navigateToGoogle: () -> Unit,
-    navigateBack: () -> Unit  // Add back navigation callback
+    navigateBack: () -> Unit
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(
