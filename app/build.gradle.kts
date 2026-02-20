@@ -89,4 +89,16 @@ dependencies {
 
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
+
+    // Firebase (recommended BOM)
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-auth")
+
+    // Credential Manager (NEW standard)
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+
+    // Google ID Token support
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
 }

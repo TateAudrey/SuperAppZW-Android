@@ -1,5 +1,6 @@
 package com.superappzw.ui.onboarding
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,23 +21,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.superappzw.R
 import com.superappzw.ui.components.buttons.SocialButton
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
+import com.superappzw.viewModel.SignInViewModel
 
 @Composable
 fun GetStartedScreen(
     modifier: Modifier = Modifier,
     navigateToEmail: () -> Unit,
+    signInViewModel: SignInViewModel = viewModel(),
     navigateToGoogle: () -> Unit,
-    navigateBack: () -> Unit
+    navigateBack: () -> Unit,
+    onSignInSuccess: () -> Unit
 ) {
+    val context = LocalContext.current
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -91,11 +98,15 @@ fun GetStartedScreen(
                 onClick = navigateToEmail
             )
 
-            // Google Button
+            // Google Button Implementation
             SocialButton(
                 title = "Continue with Google",
                 icon = painterResource(id = R.drawable.ic_google),
-                onClick = navigateToGoogle
+                onClick = {
+                    signInViewModel.signInWithGoogle(context) { success ->
+                        if (success) onSignInSuccess()
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -112,8 +123,8 @@ fun GetStartedScreenPreview() {
             modifier = Modifier.fillMaxSize(),
             navigateToEmail = { },
             navigateToGoogle = { },
-            navigateBack = { }
+            navigateBack = { },
+            onSignInSuccess = { }
         )
     }
 }
-
