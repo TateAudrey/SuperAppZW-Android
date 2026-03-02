@@ -25,7 +25,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.superappzw.ui.theme.FuturaBookFamily
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 
@@ -44,7 +43,6 @@ fun PasswordField(
         placeholder = {
             Text(
                 text = placeholder,
-                fontFamily = FuturaBookFamily,
                 fontSize = 16.sp
             )
         },
@@ -60,7 +58,6 @@ fun PasswordField(
             cursorColor = PrimaryColor
         ),
         textStyle = TextStyle(
-            fontFamily = FuturaBookFamily,
             fontSize = 16.sp
         ),
         singleLine = true,

@@ -31,7 +31,6 @@ import com.superappzw.ui.components.buttons.PrimaryActionButton
 import com.superappzw.ui.components.textfields.EmailOnlyField
 import com.superappzw.ui.components.utils.AppAlert
 import com.superappzw.ui.components.utils.LoadingView
-import com.superappzw.ui.theme.FuturaMediumFamily
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 import com.superappzw.viewModel.ForgotPasswordViewModel
@@ -88,7 +87,6 @@ fun ForgotPasswordView(
                     text = "Forgot Password?",
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FuturaMediumFamily,
                     color = PrimaryColor
                 )
 

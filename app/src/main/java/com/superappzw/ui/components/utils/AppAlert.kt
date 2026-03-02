@@ -14,8 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import com.superappzw.ui.theme.FuturaBookFamily
-import com.superappzw.ui.theme.FuturaMediumFamily
 import com.superappzw.ui.theme.SuperAppZWTheme
 
 @Composable
@@ -34,8 +32,7 @@ fun AppAlert(
                         is AppAlertType.SignOut -> alertType.title
                         is AppAlertType.DeleteAccount -> alertType.title
                     },
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontFamily = FuturaMediumFamily
+                    style = MaterialTheme.typography.headlineSmall
                 )
             },
             text = {
@@ -46,8 +43,7 @@ fun AppAlert(
                         is AppAlertType.SignOut -> alertType.message
                         is AppAlertType.DeleteAccount -> alertType.message
                     },
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontFamily = FuturaBookFamily
+                    style = MaterialTheme.typography.bodyLarge
                 )
             },
             confirmButton = {

@@ -34,9 +34,6 @@ import com.superappzw.ui.components.textfields.PasswordField
 import com.superappzw.ui.components.textfields.TextOnlyField
 import com.superappzw.ui.components.utils.AppAlert
 import com.superappzw.ui.components.utils.LoadingView
-import com.superappzw.ui.theme.FuturaBoldFamily
-import com.superappzw.ui.theme.FuturaBookFamily
-import com.superappzw.ui.theme.FuturaMediumFamily
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 import com.superappzw.viewModel.SignInViewModel
@@ -94,7 +91,6 @@ fun SignInView(
                     text = "Sign In",
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FuturaMediumFamily,
                     color = PrimaryColor
                 )
 
@@ -120,7 +116,6 @@ fun SignInView(
                     Text(
                         text = "Forgot Password?",
                         fontSize = 16.sp,
-                        fontFamily = FuturaBookFamily,
                         color = PrimaryColor
                     )
 
@@ -129,7 +124,6 @@ fun SignInView(
                             text = "Reset",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FuturaBoldFamily,
                             color = PrimaryColor
                         )
                     }

@@ -16,7 +16,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.superappzw.ui.components.buttons.PrimaryActionButton
-import com.superappzw.ui.theme.FuturaBoldFamily
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 
@@ -37,7 +36,6 @@ fun HomeView(
                 text = "Hello, World!",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = FuturaBoldFamily,
                 color = PrimaryColor
             )
 
