@@ -10,6 +10,14 @@ import androidx.compose.ui.unit.sp
 import com.superappzw.R
 
 
+
+// ── Custom fonts ──────────────────────────────────────────────────────────────
+
+val GloriaHallelujah = FontFamily(
+    Font(R.font.gloriahallelujah_regular, FontWeight.Normal)
+)
+
+
 // Material 3 default typography (uses system fonts automatically)
 val Typography = Typography(
     headlineSmall = TextStyle(
