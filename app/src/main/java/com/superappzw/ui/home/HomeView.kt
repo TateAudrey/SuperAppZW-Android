@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +23,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.navigation.CustomNavBar
 import com.superappzw.ui.components.buttons.PrimaryActionButton
+import com.superappzw.ui.home.billboard.BillboardSectionView
+import com.superappzw.ui.home.billboard.BillboardViewModel
 import com.superappzw.ui.home.province.ProvinceDropDown
 import com.superappzw.ui.home.province.ProvinceViewModel
 import com.superappzw.ui.theme.PrimaryColor
@@ -35,7 +38,8 @@ fun HomeView(
     currentUserPhotoUrl: String? = null,
     dailyLanguage: DailyLanguageModel? = null,
     onProfileTap: (() -> Unit)? = null,
-    provinceViewModel: ProvinceViewModel = viewModel()
+    provinceViewModel: ProvinceViewModel = viewModel(),
+    billboardViewModel: BillboardViewModel = viewModel(),
 ) {
     // ── Derived values (mirrors Swift computed properties) ────────────────────
 
@@ -68,6 +72,10 @@ fun HomeView(
         }
     }
 
+    LaunchedEffect(Unit) {
+        billboardViewModel.load()
+    }
+
     SuperAppZWTheme {
         Column(modifier = modifier.fillMaxSize()) {
 
@@ -87,29 +95,12 @@ fun HomeView(
                 modifier = Modifier.padding(top = 20.dp),
             )
 
-            // ── Screen content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Hello, World!",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryColor,
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                PrimaryActionButton(
-                    title = "Log out",
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            // ── Billboard
+            BillboardSectionView(
+                viewModel = billboardViewModel,
+                onTap = { /* TODO: navigate to listing */ },
+                modifier = Modifier.padding(top = 16.dp),
+            )
         }
     }
 }
