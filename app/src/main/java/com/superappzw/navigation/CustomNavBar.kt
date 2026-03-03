@@ -167,15 +167,13 @@ fun CustomNavBar(
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
                                 text = tooltipData.title,
-                                fontSize = 12.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = PrimaryColor,
                                 letterSpacing = 0.5.sp,
                             )
                             Text(
                                 text = tooltipData.subtitle,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp,
                                 color = GrayColor,
                                 lineHeight = 20.sp,
                             )

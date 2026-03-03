@@ -81,15 +81,14 @@ fun NavTooltipPopup(
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
                             text = data.title,
-                            fontSize = 12.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = PrimaryColor,
                             letterSpacing = 0.5.sp,
                         )
                         Text(
                             text = data.subtitle,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
                             color = GrayColor,
                             lineHeight = 20.sp,
                         )
