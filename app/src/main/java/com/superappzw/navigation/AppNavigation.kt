@@ -89,8 +89,15 @@ fun AppNavigation(
 
         // AUTHENTICATED screens
         composable("home") {
+            val dailyLanguage by authStateManager.dailyLanguage.collectAsState()
+            val currentUserName by authStateManager.currentUserName.collectAsState()
+            val currentUserPhotoUrl by authStateManager.currentUserPhotoUrl.collectAsState()
+
             MainTabView(
-                onLogout = { authStateManager.logout() }
+                onLogout = { authStateManager.logout() },
+                dailyLanguage = dailyLanguage,
+                currentUserName = currentUserName,
+                currentUserPhotoUrl = currentUserPhotoUrl,
             )
         }
     }

@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import com.superappzw.model.DailyLanguageModel
 import com.superappzw.ui.favourites.FavouritesView
 import com.superappzw.ui.lisitngs.MyListingsView
 import com.superappzw.ui.home.HomeView
@@ -24,6 +25,9 @@ import com.superappzw.ui.theme.SuperAppZWTheme
 @Composable
 fun MainTabView(
     onLogout: () -> Unit,
+    dailyLanguage: DailyLanguageModel? = null,
+    currentUserName: String? = null,
+    currentUserPhotoUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
@@ -36,17 +40,12 @@ fun MainTabView(
                     NavigationBarItem(
                         selected = selectedTab == tab,
                         onClick = { selectedTab = tab },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label,
-                            )
-                        },
+                        icon = { Icon(imageVector = tab.icon, contentDescription = tab.label) },
                         label = { Text(tab.label) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = PrimaryColor,
                             selectedTextColor = PrimaryColor,
-                            indicatorColor = PrimaryColor.copy(alpha = 0.12f), // subtle pill behind icon
+                            indicatorColor = PrimaryColor.copy(alpha = 0.12f),
                             unselectedIconColor = Color.Gray,
                             unselectedTextColor = Color.Gray,
                         ),
@@ -54,18 +53,17 @@ fun MainTabView(
                 }
             }
         },
-    ) { innerPadding ->
+    ) { _ ->
         when (selectedTab) {
             MainTab.HOME -> HomeView(
                 onLogout = onLogout,
+                dailyLanguage = dailyLanguage,
+                currentUserName = currentUserName,
+                currentUserPhotoUrl = currentUserPhotoUrl,
                 modifier = Modifier.fillMaxSize(),
             )
-            MainTab.MY_LISTINGS -> MyListingsView(
-                modifier = Modifier.fillMaxSize(),
-            )
-            MainTab.FAVOURITES -> FavouritesView(
-                modifier = Modifier.fillMaxSize(),
-            )
+            MainTab.MY_LISTINGS -> MyListingsView(modifier = Modifier.fillMaxSize())
+            MainTab.FAVOURITES -> FavouritesView(modifier = Modifier.fillMaxSize())
         }
     }
 }
