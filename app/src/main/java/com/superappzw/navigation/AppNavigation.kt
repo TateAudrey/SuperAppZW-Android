@@ -88,12 +88,10 @@ fun AppNavigation(
             )
         }
 
-        // AUTHENTICATED screen
+        // AUTHENTICATED screens
         composable("home") {
-            HomeView(
-                onLogout = {
-                    authStateManager.logout()
-                }
+            MainTabView(
+                onLogout = { authStateManager.logout() }
             )
         }
     }
