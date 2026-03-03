@@ -12,7 +12,6 @@ import com.superappzw.ui.components.utils.LoadingView
 import com.superappzw.ui.onboarding.GetStartedScreen
 import com.superappzw.ui.onboarding.OnboardingScreen
 import com.superappzw.ui.screens.ForgotPasswordView
-import com.superappzw.ui.screens.HomeView
 import com.superappzw.ui.screens.SignInView
 import com.superappzw.ui.screens.SignUpView
 

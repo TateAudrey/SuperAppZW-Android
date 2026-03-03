@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.superappzw.ui.favourites.FavouritesView
 import com.superappzw.ui.lisitngs.MyListingsView
-import com.superappzw.ui.screens.HomeView
+import com.superappzw.ui.home.HomeView
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 

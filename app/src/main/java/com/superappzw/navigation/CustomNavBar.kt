@@ -6,9 +6,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -48,8 +51,9 @@ fun CustomNavBar(
         modifier = modifier
             .fillMaxWidth()
             .background(Color.Transparent)
+            .windowInsetsPadding(WindowInsets.statusBars)  // respects status bar height
             .padding(horizontal = 20.dp)
-            .padding(top = 12.dp, bottom = 8.dp),
+            .padding(top = 12.dp, bottom = 8.dp),  // extra breathing room below status bar
     ) {
         // ── Title ─────────────────────────────────────────────────────────────
         Text(
