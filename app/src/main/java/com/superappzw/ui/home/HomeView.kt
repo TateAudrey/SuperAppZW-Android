@@ -18,9 +18,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.navigation.CustomNavBar
 import com.superappzw.ui.components.buttons.PrimaryActionButton
+import com.superappzw.ui.home.province.ProvinceDropDown
+import com.superappzw.ui.home.province.ProvinceViewModel
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 
@@ -32,6 +35,7 @@ fun HomeView(
     currentUserPhotoUrl: String? = null,
     dailyLanguage: DailyLanguageModel? = null,
     onProfileTap: (() -> Unit)? = null,
+    provinceViewModel: ProvinceViewModel = viewModel()
 ) {
     // ── Derived values (mirrors Swift computed properties) ────────────────────
 
@@ -67,7 +71,7 @@ fun HomeView(
     SuperAppZWTheme {
         Column(modifier = modifier.fillMaxSize()) {
 
-            // ── Nav bar ───────────────────────────────────────────────────────
+            // ── Nav bar
             CustomNavBar(
                 title = dynamicTitle,
                 profileImageURL = currentUserPhotoUrl,
@@ -76,7 +80,14 @@ fun HomeView(
                 onProfileTap = onProfileTap,
             )
 
-            // ── Screen content ────────────────────────────────────────────────
+            //Province Dropdown
+
+            ProvinceDropDown(
+                viewModel = provinceViewModel,
+                modifier = Modifier.padding(top = 20.dp),
+            )
+
+            // ── Screen content
             Column(
                 modifier = Modifier
                     .fillMaxSize()
