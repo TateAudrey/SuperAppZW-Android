@@ -1,19 +1,14 @@
 package com.superappzw.ui.home
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,7 +17,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.navigation.CustomNavBar
-import com.superappzw.ui.components.buttons.PrimaryActionButton
+import com.superappzw.ui.categories.CategoryItem
+import com.superappzw.ui.categories.PopularCategoriesSection
 import com.superappzw.ui.home.billboard.BillboardSectionView
 import com.superappzw.ui.home.billboard.BillboardViewModel
 import com.superappzw.ui.home.province.ProvinceDropDown
@@ -38,12 +34,12 @@ fun HomeView(
     currentUserPhotoUrl: String? = null,
     dailyLanguage: DailyLanguageModel? = null,
     onProfileTap: (() -> Unit)? = null,
+    onCategorySelect: ((CategoryItem) -> Unit)? = null,
     provinceViewModel: ProvinceViewModel = viewModel(),
     billboardViewModel: BillboardViewModel = viewModel(),
 ) {
-    // ── Derived values (mirrors Swift computed properties) ────────────────────
+    // ── Derived values ────────────────────────────────────────────────────────
 
-    // First name only, fallback to "there" if not loaded yet (matches Swift)
     val firstName = remember(currentUserName) {
         val first = currentUserName
             ?.trim()
@@ -53,33 +49,35 @@ fun HomeView(
         first ?: "there"
     }
 
-    // "Mangwanani, Tatenda" from language data, else "Hello, Tatenda"
     val dynamicTitle = remember(dailyLanguage, firstName) {
-        if (dailyLanguage != null) {
-            "${dailyLanguage.greeting}, $firstName"
-        } else {
-            "Hello, $firstName"
-        }
+        if (dailyLanguage != null) "${dailyLanguage.greeting}, $firstName"
+        else "Hello, $firstName"
     }
 
-    // Tooltip only appears once language data is loaded
     val tooltipData = remember(dailyLanguage) {
         dailyLanguage?.let {
             NavTooltipData(
-                title = "Language: ${it.languageID}",   // e.g. "Language: ChiShona"
-                subtitle = it.summary,                  // full summary from Firestore
+                title = "Language: ${it.languageID}",
+                subtitle = it.summary,
             )
         }
     }
+
+    // ── Load on first appearance ──────────────────────────────────────────────
 
     LaunchedEffect(Unit) {
         billboardViewModel.load()
     }
 
     SuperAppZWTheme {
-        Column(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 100.dp), // clears the floating tab bar
+        ) {
 
-            // ── Nav bar
+            // ── Nav bar ───────────────────────────────────────────────────────
             CustomNavBar(
                 title = dynamicTitle,
                 profileImageURL = currentUserPhotoUrl,
@@ -88,23 +86,38 @@ fun HomeView(
                 onProfileTap = onProfileTap,
             )
 
-            //Province Dropdown
-
+            // ── Province dropdown ─────────────────────────────────────────────
             ProvinceDropDown(
                 viewModel = provinceViewModel,
                 modifier = Modifier.padding(top = 20.dp),
             )
 
-            // ── Billboard
+            // ── Billboard carousel ────────────────────────────────────────────
             BillboardSectionView(
                 viewModel = billboardViewModel,
                 onTap = { /* TODO: navigate to listing */ },
                 modifier = Modifier.padding(top = 16.dp),
             )
+
+            // ── Browse Categories header ──────────────────────────────────────
+            Text(
+                text = "Browse Categories",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryColor,
+                modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 4.dp),
+            )
+
+            // ── Categories grid ───────────────────────────────────────────────
+            PopularCategoriesSection(
+                categories = CategoryItem.all,
+                onSelect = { category ->
+                    onCategorySelect?.invoke(category)
+                },
+            )
         }
     }
 }
-
 
 // ── Previews ──────────────────────────────────────────────────────────────────
 
@@ -121,6 +134,25 @@ private fun HomeViewWithLanguagePreview() {
                 summary = "ChiShona is spoken by over 10 million people across Zimbabwe.",
             ),
         )
+    }
+}
+
+@Preview(name = "Home – loading", showBackground = true, backgroundColor = 0xFFF8F9FA)
+@Composable
+private fun HomeViewLoadingPreview() {
+    SuperAppZWTheme {
+        HomeView(
+            currentUserName = "Tatenda Moyo",
+            dailyLanguage = null,
+        )
+    }
+}
+
+@Preview(name = "Home – no user", showBackground = true, backgroundColor = 0xFFF8F9FA)
+@Composable
+private fun HomeViewNoUserPreview() {
+    SuperAppZWTheme {
+        HomeView()
     }
 }
 

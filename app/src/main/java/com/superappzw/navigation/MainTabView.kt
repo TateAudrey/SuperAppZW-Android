@@ -60,6 +60,9 @@ fun MainTabView(
                 dailyLanguage = dailyLanguage,
                 currentUserName = currentUserName,
                 currentUserPhotoUrl = currentUserPhotoUrl,
+                onCategorySelect = { category ->
+                    // TODO: navController.navigate("categoryDetail/${category.name}")
+                },
                 modifier = Modifier.fillMaxSize(),
             )
             MainTab.MY_LISTINGS -> MyListingsView(modifier = Modifier.fillMaxSize())
