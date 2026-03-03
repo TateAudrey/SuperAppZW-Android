@@ -1,6 +1,7 @@
 package com.superappzw.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -53,7 +54,7 @@ fun MainTabView(
                 }
             }
         },
-    ) { _ ->
+    ) { innerPadding ->
         when (selectedTab) {
             MainTab.HOME -> HomeView(
                 onLogout = onLogout,
@@ -63,7 +64,9 @@ fun MainTabView(
                 onCategorySelect = { category ->
                     // TODO: navController.navigate("categoryDetail/${category.name}")
                 },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
+                    .padding(innerPadding),
+
             )
             MainTab.MY_LISTINGS -> MyListingsView(modifier = Modifier.fillMaxSize())
             MainTab.FAVOURITES -> FavouritesView(modifier = Modifier.fillMaxSize())

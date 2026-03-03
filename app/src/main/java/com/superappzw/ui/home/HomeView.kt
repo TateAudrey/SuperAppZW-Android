@@ -1,7 +1,11 @@
 package com.superappzw.ui.home
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +27,7 @@ import com.superappzw.ui.home.billboard.BillboardSectionView
 import com.superappzw.ui.home.billboard.BillboardViewModel
 import com.superappzw.ui.home.province.ProvinceDropDown
 import com.superappzw.ui.home.province.ProvinceViewModel
+import com.superappzw.ui.lisitngs.ListingsSectionView
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 
@@ -35,8 +40,10 @@ fun HomeView(
     dailyLanguage: DailyLanguageModel? = null,
     onProfileTap: (() -> Unit)? = null,
     onCategorySelect: ((CategoryItem) -> Unit)? = null,
+    onListingTap: ((itemCode: String, ownerUserID: String) -> Unit)? = null,
     provinceViewModel: ProvinceViewModel = viewModel(),
     billboardViewModel: BillboardViewModel = viewModel(),
+    homeViewModel: HomeViewModel = viewModel(),
 ) {
     // ── Derived values ────────────────────────────────────────────────────────
 
@@ -67,6 +74,7 @@ fun HomeView(
 
     LaunchedEffect(Unit) {
         billboardViewModel.load()
+        homeViewModel.loadFeaturedListings()
     }
 
     SuperAppZWTheme {
@@ -74,7 +82,6 @@ fun HomeView(
             modifier = modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 100.dp), // clears the floating tab bar
         ) {
 
             // ── Nav bar ───────────────────────────────────────────────────────
@@ -89,7 +96,7 @@ fun HomeView(
             // ── Province dropdown ─────────────────────────────────────────────
             ProvinceDropDown(
                 viewModel = provinceViewModel,
-                modifier = Modifier.padding(top = 20.dp),
+                modifier = Modifier.padding(top = 20.dp)
             )
 
             // ── Billboard carousel ────────────────────────────────────────────
@@ -99,7 +106,7 @@ fun HomeView(
                 modifier = Modifier.padding(top = 16.dp),
             )
 
-            // ── Browse Categories header ──────────────────────────────────────
+            // ── Browse Categories ─────────────────────────────────────────────
             Text(
                 text = "Browse Categories",
                 fontSize = 20.sp,
@@ -108,13 +115,33 @@ fun HomeView(
                 modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 4.dp),
             )
 
-            // ── Categories grid ───────────────────────────────────────────────
             PopularCategoriesSection(
                 categories = CategoryItem.all,
                 onSelect = { category ->
                     onCategorySelect?.invoke(category)
                 },
             )
+
+            // ── Featured Listings ─────────────────────────────────────────────
+            Text(
+                text = "Featured Listings",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryColor,
+                modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 10.dp),
+            )
+
+            ListingsSectionView(
+                viewModel = homeViewModel,
+                onTap = { itemCode, ownerUserID ->
+                    onListingTap?.invoke(itemCode, ownerUserID)
+                },
+                onRefresh = {
+                    homeViewModel.refreshListings()
+                },
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
