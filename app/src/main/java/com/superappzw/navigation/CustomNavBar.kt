@@ -1,5 +1,7 @@
 package com.superappzw.navigation
 
+import com.superappzw.ui.home.greeting.RainbowGlowStorage
+import com.superappzw.ui.home.greeting.rainbowGlow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -29,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,7 +66,23 @@ fun CustomNavBar(
     onProfileTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    // ── Use remember (not rememberSaveable) to avoid stale state ─────────────
+    val context = LocalContext.current
+
+    // ── Glow storage — persists tap state across sessions via SharedPreferences
+    val glowStorage = remember { RainbowGlowStorage(context) }
+
+    // Local state that drives recomposition when tap is recorded
+    var hasBeenTappedToday by remember { mutableStateOf(glowStorage.hasBeenTappedToday) }
+
+    // Re-check on every composition in case the day rolled over mid-session
+    DisposableEffect(Unit) {
+        hasBeenTappedToday = glowStorage.hasBeenTappedToday
+        onDispose {}
+    }
+
+    // Glow is active only when tooltip exists AND not yet tapped today
+    val glowActive = tooltipData != null && !hasBeenTappedToday
+
     var showTooltip by remember { mutableStateOf(false) }
 
     Box(
@@ -80,7 +100,8 @@ fun CustomNavBar(
 
             // ── Title ─────────────────────────────────────────────────────────
             val titleColor by animateColorAsState(
-                targetValue = if (showTooltip) PrimaryColor else MaterialTheme.colorScheme.onBackground,
+                targetValue = if (showTooltip) PrimaryColor
+                else MaterialTheme.colorScheme.onBackground,
                 animationSpec = tween(200),
                 label = "titleColor",
             )
@@ -90,17 +111,25 @@ fun CustomNavBar(
                 fontFamily = GloriaHallelujah,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Normal,
-                color = titleColor,
+                // When glow is active the rainbow shader overrides color,
+                // so titleColor only matters when glow is inactive
+                color = if (glowActive) Color.Black else titleColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .weight(1f)
+                    .rainbowGlow(isActive = glowActive)  // ← rainbow effect
                     .then(
                         if (tooltipData != null) {
                             Modifier.clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                            ) { showTooltip = !showTooltip }
+                            ) {
+                                // Record tap — glow turns off for the rest of the day
+                                glowStorage.recordTap()
+                                hasBeenTappedToday = true
+                                showTooltip = !showTooltip
+                            }
                         } else Modifier
                     ),
             )
@@ -115,7 +144,7 @@ fun CustomNavBar(
             )
         }
 
-        // ── Tooltip — rendered inside Box, directly below title ───────────────
+        // ── Tooltip popup ─────────────────────────────────────────────────────
         if (tooltipData != null && showTooltip) {
             Popup(
                 onDismissRequest = { showTooltip = false },
@@ -172,11 +201,8 @@ private fun ProfileCircle(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(42.dp)
-            .shadow(
-                elevation = 4.dp,
-                shape = CircleShape,
-                ambientColor = Color.Black.copy(alpha = 0.08f),
-            )
+            .shadow(elevation = 4.dp, shape = CircleShape,
+                ambientColor = Color.Black.copy(alpha = 0.08f))
             .clip(CircleShape)
             .background(PrimaryColor)
             .then(
@@ -192,67 +218,54 @@ private fun ProfileCircle(
                 model = profileImageURL,
                 contentDescription = "Profile picture of $userName",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape),
-                error = { PlaceholderContent(initial = initial) },
-                loading = { PlaceholderContent(initial = initial) },
+                modifier = Modifier.size(42.dp).clip(CircleShape),
+                error = { PlaceholderContent(initial) },
+                loading = { PlaceholderContent(initial) },
             )
         } else {
-            PlaceholderContent(initial = initial)
+            PlaceholderContent(initial)
         }
     }
 }
 
-// ── Placeholder ───────────────────────────────────────────────────────────────
-
 @Composable
 private fun PlaceholderContent(initial: String) {
     if (initial.isNotEmpty()) {
-        Text(
-            text = initial,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.White,
-        )
+        Text(text = initial, fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold, color = Color.White)
     } else {
-        Icon(
-            imageVector = Icons.Filled.Person,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(22.dp),
-        )
+        Icon(imageVector = Icons.Filled.Person, contentDescription = null,
+            tint = Color.White, modifier = Modifier.size(22.dp))
     }
 }
 
 // ── Previews ──────────────────────────────────────────────────────────────────
 
-@Preview(name = "Nav Bar – tooltip visible", showBackground = true, backgroundColor = 0xFFF8F9FA)
+@Preview(name = "Glow active", showBackground = true, backgroundColor = 0xFFF8F9FA)
 @Composable
-private fun CustomNavBarTooltipPreview() {
+private fun GlowActivePreview() {
     SuperAppZWTheme {
         CustomNavBar(
             title = "Mangwanani, Tatenda",
             profileImageURL = null,
-            userName = "Tatenda Moyo",
+            userName = "Tatenda",
             tooltipData = NavTooltipData(
-                title = "ChiShona",
-                subtitle = "Mangwanani — Good morning in Shona",
+                title = "Language: ChiShona",
+                subtitle = "ChiShona is spoken by over 10 million people in Zimbabwe.",
             ),
-            onProfileTap = {},
         )
     }
 }
 
-@Preview(name = "Nav Bar – no tooltip", showBackground = true, backgroundColor = 0xFFF8F9FA)
+@Preview(name = "Glow inactive – tapped today", showBackground = true, backgroundColor = 0xFFF8F9FA)
 @Composable
-private fun CustomNavBarNoTooltipPreview() {
+private fun GlowInactivePreview() {
     SuperAppZWTheme {
         CustomNavBar(
-            title = "Linjani, Audrey",
+            title = "Mangwanani, Tatenda",
             profileImageURL = null,
-            userName = "Audrey Dube",
-            onProfileTap = {},
+            userName = "Tatenda",
+            tooltipData = null, // simulates post-tap state
         )
     }
 }
