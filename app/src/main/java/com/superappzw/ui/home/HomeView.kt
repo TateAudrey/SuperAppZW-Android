@@ -54,7 +54,7 @@ fun HomeView(
             ?.split(" ")
             ?.firstOrNull()
             ?.takeIf { it.isNotBlank() && it != "User" }
-        first ?: "there"
+        first ?: "Stranger"
     }
 
     val dynamicTitle = remember(dailyLanguage, firstName) {
