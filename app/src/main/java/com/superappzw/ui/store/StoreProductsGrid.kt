@@ -1,12 +1,12 @@
 package com.superappzw.ui.store
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -15,33 +15,51 @@ import com.superappzw.ui.lisitngs.ListingCard
 import com.superappzw.ui.lisitngs.ListingModel
 import com.superappzw.ui.theme.SuperAppZWTheme
 
+
+// Non-lazy 2-column grid — safe to use inside a parent verticalScroll().
+// LazyVerticalGrid cannot be nested inside Column(Modifier.verticalScroll())
+// because it requires bounded height constraints.
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StoreProductsGrid(
     listings: List<StoreListing>,
     onSelect: ((StoreListing) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    val rows = listings.chunked(2)
+
+    Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
     ) {
-        items(listings, key = { it.itemCode }) { listing ->
-            ListingCard(
-                model = ListingModel(
-                    title = listing.title,
-                    description = listing.description,
-                    price = listing.price,
-                    currency = listing.currency,
-                    itemCode = listing.itemCode,
-                    imageURL = listing.imageURL,
-                    viewCount = listing.viewCount,
-                ),
-                onTap = { onSelect?.invoke(listing) },
+        rows.forEach { rowItems ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-            )
+            ) {
+                rowItems.forEach { listing ->
+                    ListingCard(
+                        model = ListingModel(
+                            title = listing.title,
+                            description = listing.description,
+                            price = listing.price,
+                            currency = listing.currency,
+                            itemCode = listing.itemCode,
+                            imageURL = listing.imageURL,
+                            viewCount = listing.viewCount,
+                        ),
+                        onTap = { onSelect?.invoke(listing) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                if (rowItems.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }

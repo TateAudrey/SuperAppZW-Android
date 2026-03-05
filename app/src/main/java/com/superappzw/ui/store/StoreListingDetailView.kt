@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import com.superappzw.services.ListingService
 import com.superappzw.ui.components.utils.abbreviated
@@ -53,6 +55,60 @@ import com.superappzw.ui.theme.PrimaryColor
 
 @Composable
 fun StoreListingDetailView(
+    itemCode: String,
+    ownerUserID: String,
+    modifier: Modifier = Modifier,
+    viewModel: StoreListingDetailViewModel = viewModel(),
+) {
+    val listing by viewModel.listing.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    // Fetch real listing data on first composition
+    LaunchedEffect(itemCode, ownerUserID) {
+        viewModel.load(itemCode = itemCode, ownerUserID = ownerUserID)
+    }
+
+    when {
+        isLoading -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF2F2F7)),
+            ) {
+                CircularProgressIndicator(color = PrimaryColor)
+            }
+        }
+
+        errorMessage != null -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF2F2F7)),
+            ) {
+                Text(
+                    text = errorMessage ?: "Something went wrong.",
+                    color = Color.Gray,
+                    fontSize = 15.sp,
+                )
+            }
+        }
+
+        listing != null -> {
+            StoreListingDetailContent(
+                listing = listing!!,
+                modifier = modifier,
+            )
+        }
+    }
+}
+
+// ── Detail content ────────────────────────────────────────────────────────────
+
+@Composable
+private fun StoreListingDetailContent(
     listing: StoreListing,
     modifier: Modifier = Modifier,
 ) {
@@ -68,9 +124,7 @@ fun StoreListingDetailView(
         label = "heartTint",
     )
 
-    // Record view once when this screen is presented — fire-and-forget,
-    // cancelled automatically if the composition leaves before completion.
-    // Mirrors Swift's .task { listingService.recordView(...) }
+    // Record view once — fire-and-forget, mirrors Swift's .task { }
     LaunchedEffect(listing.itemCode) {
         listingService.recordView(
             itemCode = listing.itemCode,
@@ -81,13 +135,13 @@ fun StoreListingDetailView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF2F2F7)) // systemGroupedBackground equivalent
+            .background(Color(0xFFF2F2F7))
             .verticalScroll(rememberScrollState())
             .padding(top = 16.dp, bottom = 30.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
 
-        // ── Image + Favourite button ───────────────────────────────────────────
+        // ── Image + Favourite button ──────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -208,11 +262,7 @@ fun StoreListingDetailView(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
-            Text(
-                text = "Code:",
-                fontSize = 13.sp,
-                color = Color.Gray,
-            )
+            Text(text = "Code:", fontSize = 13.sp, color = Color.Gray)
             Text(
                 text = listing.itemCode,
                 fontSize = 13.sp,
@@ -238,27 +288,27 @@ fun StoreListingDetailView(
                 text = listing.description.ifBlank { "No description provided." },
                 fontSize = 15.sp,
                 color = Color.Gray,
-                lineHeight = 22.sp, // lineSpacing(5) equivalent
+                lineHeight = 22.sp,
             )
         }
     }
 }
 
-// ── Previews ──────────────────────────────────────────────────────────────────
-
-private val previewListing = StoreListing(
-    title = "AirPods Pro 3",
-    description = "Only a few months old. Mint condition and box is available.",
-    price = 150.00,
-    currency = "USD",
-    itemCode = "ISA-ZW-1772102894-1527",
-    imageURL = null,
-    viewCount = 1527,
-    ownerUserID = "UT0mHxc1IJcuRsibi3srlMbISZI2",
-)
+// ── Preview ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun StoreListingDetailPreview() {
-    StoreListingDetailView(listing = previewListing)
+    StoreListingDetailContent(
+        listing = StoreListing(
+            title = "AirPods Pro 3",
+            description = "Only a few months old. Mint condition and box is available.",
+            price = 150.00,
+            currency = "USD",
+            itemCode = "ISA-ZW-1772102894-1527",
+            imageURL = null,
+            viewCount = 1527,
+            ownerUserID = "UT0mHxc1IJcuRsibi3srlMbISZI2",
+        ),
+    )
 }

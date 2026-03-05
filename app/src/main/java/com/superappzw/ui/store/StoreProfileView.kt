@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -37,7 +38,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.superappzw.model.StoreReviewModel
 import com.superappzw.ui.components.utils.EmptyStateView
 import com.superappzw.ui.lisitngs.ListingsGridView
 import com.superappzw.ui.reviews.PostReviewSheet
@@ -53,11 +53,10 @@ fun StoreProfileView(
     storeProfileViewModel: StoreProfileViewModel = viewModel(),
     reviewViewModel: ReviewViewModel = viewModel(),
 ) {
-    val currentUserID = try {
-        FirebaseAuth.getInstance().currentUser?.uid
-    } catch (e: Exception) {
-        null
-    }
+    val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
+
+    var selectedTab by rememberSaveable { mutableStateOf(StoreTab.PRODUCTS) }
+    var showPostReview by remember { mutableStateOf(false) }
 
     val storeName by storeProfileViewModel.storeName.collectAsState()
     val ownerName by storeProfileViewModel.ownerName.collectAsState()
@@ -69,79 +68,15 @@ fun StoreProfileView(
     val services by storeProfileViewModel.services.collectAsState()
     val isLoading by storeProfileViewModel.isLoading.collectAsState()
 
-    val reviews by reviewViewModel.reviews.collectAsState()
-    val averageRating by reviewViewModel.averageRating.collectAsState()
-    val totalReviews by reviewViewModel.totalReviews.collectAsState()
     val hasReviewed by reviewViewModel.hasReviewed.collectAsState()
     val isSubmitting by reviewViewModel.isSubmitting.collectAsState()
     val submitSuccess by reviewViewModel.submitSuccess.collectAsState()
     val reviewErrorMessage by reviewViewModel.errorMessage.collectAsState()
 
-    StoreProfileView(
-        storeID = storeID,
-        currentUserID = currentUserID,
-        storeName = storeName,
-        ownerName = ownerName,
-        suburb = suburb,
-        location = location,
-        profileImageURL = profileImageURL,
-        ownerUID = ownerUID,
-        products = products,
-        services = services,
-        isLoading = isLoading,
-        reviews = reviews,
-        averageRating = averageRating,
-        totalReviews = totalReviews,
-        hasReviewed = hasReviewed,
-        isSubmitting = isSubmitting,
-        submitSuccess = submitSuccess,
-        reviewErrorMessage = reviewErrorMessage,
-        onNavigateToListing = onNavigateToListing,
-        onLoadData = {
-            storeProfileViewModel.load(storeID)
-            reviewViewModel.load(storeID)
-        },
-        onSubmitReview = { rating, comment ->
-            reviewViewModel.submitReview(
-                storeOwnerUID = ownerUID,
-                comment = comment,
-                rating = rating,
-            )
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun StoreProfileView(
-    storeID: String,
-    currentUserID: String?,
-    storeName: String,
-    ownerName: String,
-    suburb: String,
-    location: String,
-    profileImageURL: String?,
-    ownerUID: String,
-    products: List<StoreListing>,
-    services: List<String>,
-    isLoading: Boolean,
-    reviews: List<StoreReviewModel>,
-    averageRating: Double,
-    totalReviews: Int,
-    hasReviewed: Boolean,
-    isSubmitting: Boolean,
-    submitSuccess: Boolean,
-    reviewErrorMessage: String?,
-    onNavigateToListing: (StoreListing) -> Unit = {},
-    onLoadData: () -> Unit = {},
-    onSubmitReview: (Int, String) -> Unit = { _, _ -> },
-) {
-    var selectedTab by rememberSaveable { mutableStateOf(StoreTab.PRODUCTS) }
-    var showPostReview by remember { mutableStateOf(false) }
-
     // Load both ViewModels on first composition — mirrors Swift's .task { }
     LaunchedEffect(storeID) {
-        onLoadData()
+        storeProfileViewModel.load(storeID)
+        reviewViewModel.load(storeID)
     }
 
     // Auto-dismiss PostReviewSheet on successful submission
@@ -228,12 +163,7 @@ fun StoreProfileView(
                     onNavigateToListing = onNavigateToListing,
                 )
                 StoreTab.SERVICES -> StoreServicesTab(services = services)
-                StoreTab.REVIEWS  -> StoreReviewsTab(
-                    isLoading = isLoading,
-                    reviews = reviews,
-                    averageRating = averageRating,
-                    totalReviews = totalReviews
-                )
+                StoreTab.REVIEWS  -> StoreReviewsTab(viewModel = reviewViewModel)
             }
         }
     }
@@ -246,7 +176,13 @@ fun StoreProfileView(
             isSubmitting = isSubmitting,
             errorMessage = reviewErrorMessage,
             submitSuccess = submitSuccess,
-            onSubmit = onSubmitReview,
+            onSubmit = { rating, comment ->
+                reviewViewModel.submitReview(
+                    storeOwnerUID = ownerUID,
+                    comment = comment,
+                    rating = rating,
+                )
+            },
             onDismiss = { showPostReview = false },
         )
     }
@@ -276,14 +212,18 @@ private fun ProductsTab(
         }
         products.isEmpty() -> {
             EmptyStateView(
-                icon = Icons.Filled.Phone, // placeholder — swap for tray/inbox icon
+                icon = Icons.Outlined.Inbox,
                 message = "No products listed yet",
             )
         }
         else -> {
+            // Look up the full StoreListing by itemCode so we can pass it to the detail view
+            val listingMap = remember(products) { products.associateBy { it.itemCode } }
             ListingsGridView(
                 listings = products,
-                onTap = { onNavigateToListing(it) },
+                onTap = { itemCode, _ ->
+                    listingMap[itemCode]?.let { onNavigateToListing(it) }
+                },
             )
         }
     }
@@ -295,25 +235,6 @@ private fun ProductsTab(
 @Composable
 private fun StoreProfileViewPreview() {
     SuperAppZWTheme {
-        StoreProfileView(
-            storeID = "UT0mHxc1IJcuRsibi3srlMbISZI2",
-            currentUserID = null,
-            storeName = "Sample Store",
-            ownerName = "John Doe",
-            suburb = "Harare",
-            location = "Main St",
-            profileImageURL = null,
-            ownerUID = "owner123",
-            products = emptyList(),
-            services = emptyList(),
-            isLoading = false,
-            reviews = emptyList(),
-            averageRating = 4.5,
-            totalReviews = 10,
-            hasReviewed = false,
-            isSubmitting = false,
-            submitSuccess = false,
-            reviewErrorMessage = null
-        )
+        StoreProfileView(storeID = "UT0mHxc1IJcuRsibi3srlMbISZI2")
     }
 }

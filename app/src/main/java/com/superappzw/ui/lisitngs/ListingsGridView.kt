@@ -3,54 +3,72 @@ package com.superappzw.ui.lisitngs
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.ui.store.StoreListing
 import com.superappzw.ui.theme.SuperAppZWTheme
 
+// Non-lazy 2-column grid — safe to use inside a parent verticalScroll().
+// LazyVerticalGrid cannot be nested inside Column(Modifier.verticalScroll())
+// because it requires bounded height constraints.
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListingsGridView(
     listings: List<StoreListing>,
-    onTap: (StoreListing) -> Unit,
+    onTap: (itemCode: String, ownerUserID: String) -> Unit,
     onLongPress: ((StoreListing) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    // Hoisted currentUserID to avoid Firebase initialization errors in Previews.
-    // Default value uses LocalInspectionMode to safely bypass Firebase when rendering in the IDE.
-    currentUserID: String? = if (LocalInspectionMode.current) null else FirebaseAuth.getInstance().currentUser?.uid
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier,
-    ) {
-        items(listings, key = { it.itemCode }) { listing ->
-            val isOwner = currentUserID != null && listing.ownerUserID == currentUserID
+    val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
 
-            ListingCard(
-                model = ListingModel(
-                    title = listing.title,
-                    description = listing.description,
-                    price = listing.price,
-                    currency = listing.currency,
-                    itemCode = listing.itemCode,
-                    imageURL = listing.imageURL,
-                    viewCount = listing.viewCount,
-                ),
-                onTap = { onTap(listing) },
-                onLongPress = if (isOwner) ({ onLongPress?.invoke(listing) }) else null,
+    // Chunk into rows of 2 — mirrors LazyVGrid(columns: [.flexible(), .flexible()])
+    val rows = listings.chunked(2)
+
+    androidx.compose.foundation.layout.Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+    ) {
+        rows.forEach { rowItems ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-            )
+            ) {
+                rowItems.forEach { listing ->
+                    val isOwner = currentUserID != null && listing.ownerUserID == currentUserID
+
+                    ListingCard(
+                        model = ListingModel(
+                            title = listing.title,
+                            description = listing.description,
+                            price = listing.price,
+                            currency = listing.currency,
+                            itemCode = listing.itemCode,
+                            imageURL = listing.imageURL,
+                            viewCount = listing.viewCount,
+                        ),
+                        onTap = { onTap(listing.itemCode, listing.ownerUserID) },
+                        onLongPress = if (isOwner) ({ onLongPress?.invoke(listing) }) else null,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                // If the last row has only 1 item, fill the second slot with empty space
+                if (rowItems.size == 1) {
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
@@ -83,10 +101,19 @@ private fun ListingsGridViewPreview() {
                     viewCount = 3,
                     ownerUserID = "other-user",
                 ),
+                StoreListing(
+                    title = "Samsung Monitor",
+                    description = "27 inch 4K",
+                    price = 320.0,
+                    currency = "USD",
+                    itemCode = "ISA-ZW-003",
+                    imageURL = null,
+                    viewCount = 89,
+                    ownerUserID = "other-user",
+                ),
             ),
-            onTap = {},
+            onTap = { _, _ -> },
             onLongPress = {},
-            currentUserID = "test-user"
         )
     }
 }

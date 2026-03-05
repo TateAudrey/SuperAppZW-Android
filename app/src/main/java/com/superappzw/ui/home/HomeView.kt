@@ -40,6 +40,7 @@ fun HomeView(
     dailyLanguage: DailyLanguageModel? = null,
     onProfileTap: (() -> Unit)? = null,
     onCategorySelect: ((CategoryItem) -> Unit)? = null,
+    // itemCode + ownerUserID passed up — MainTabView decides where to navigate
     onListingTap: ((itemCode: String, ownerUserID: String) -> Unit)? = null,
     provinceViewModel: ProvinceViewModel = viewModel(),
     billboardViewModel: BillboardViewModel = viewModel(),
@@ -81,7 +82,7 @@ fun HomeView(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
         ) {
 
             // ── Nav bar ───────────────────────────────────────────────────────
@@ -96,7 +97,7 @@ fun HomeView(
             // ── Province dropdown ─────────────────────────────────────────────
             ProvinceDropDown(
                 viewModel = provinceViewModel,
-                modifier = Modifier.padding(top = 20.dp)
+                modifier = Modifier.padding(top = 20.dp),
             )
 
             // ── Billboard carousel ────────────────────────────────────────────
@@ -117,9 +118,7 @@ fun HomeView(
 
             PopularCategoriesSection(
                 categories = CategoryItem.all,
-                onSelect = { category ->
-                    onCategorySelect?.invoke(category)
-                },
+                onSelect = { category -> onCategorySelect?.invoke(category) },
             )
 
             // ── Featured Listings ─────────────────────────────────────────────
@@ -134,11 +133,10 @@ fun HomeView(
             ListingsSectionView(
                 viewModel = homeViewModel,
                 onTap = { itemCode, ownerUserID ->
+                    // Pass up to MainTabView which owns the nav decision
                     onListingTap?.invoke(itemCode, ownerUserID)
                 },
-                onRefresh = {
-                    homeViewModel.refreshListings()
-                },
+                onRefresh = { homeViewModel.refreshListings() },
             )
 
             Spacer(modifier = Modifier.height(32.dp))
