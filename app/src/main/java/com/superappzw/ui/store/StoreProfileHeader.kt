@@ -30,7 +30,6 @@ import coil.compose.SubcomposeAsyncImage
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 
-private val AvatarBackground = Color(0xFF142E61)
 private val AvatarShape = RoundedCornerShape(10.dp)
 
 @Composable
@@ -66,7 +65,7 @@ fun StoreProfileHeader(
             modifier = Modifier
                 .size(70.dp)
                 .clip(AvatarShape)
-                .background(AvatarBackground),
+                .background(PrimaryColor),
         ) {
             if (!profileImageURL.isNullOrBlank()) {
                 SubcomposeAsyncImage(
@@ -124,7 +123,7 @@ fun StoreProfileHeader(
 
 // ── Initials helper ───────────────────────────────────────────────────────────
 
-private fun buildInitials(ownerName: String): String {
+ fun buildInitials(ownerName: String): String {
     val parts = ownerName.trim().split(" ")
     val first = parts.firstOrNull()?.take(1)?.uppercase() ?: ""
     val last = parts.drop(1).firstOrNull()?.take(1)?.uppercase() ?: ""
@@ -132,7 +131,7 @@ private fun buildInitials(ownerName: String): String {
 }
 
 @Composable
-private fun InitialsContent(initials: String) {
+ fun InitialsContent(initials: String) {
     Text(
         text = initials,
         fontSize = 22.sp,

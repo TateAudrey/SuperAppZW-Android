@@ -5,12 +5,10 @@ import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 import android.graphics.Bitmap
 import com.google.firebase.storage.FirebaseStorage
+import com.superappzw.model.UserProfileModel
 import java.io.ByteArrayOutputStream
 
-data class UserProfile(
-    val fullName: String = "",
-    val profileImageURL: String? = null,
-)
+
 
 data class PackageLimitModel(
     val id: String,
@@ -79,17 +77,11 @@ class UserService private constructor() {
 
     // ── Fetch profile ─────────────────────────────────────────────────────────
 
-    suspend fun fetchProfile(uid: String): UserProfile {
+    suspend fun fetchProfile(uid: String): UserProfileModel {
         val doc = db.collection("users").document(uid).get().await()
         val data = doc.data ?: throw Exception("User document not found")
 
-        val firstName = data["first_name"] as? String ?: ""
-        val lastName = data["last_name"] as? String ?: ""
-
-        return UserProfile(
-            fullName = "$firstName $lastName".trim(),
-            profileImageURL = data["profile_image_url"] as? String,
-        )
+        return UserProfileModel.fromData(data)
     }
 
     // ── Update profile ────────────────────────────────────────────────────────
