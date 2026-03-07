@@ -19,7 +19,7 @@ import com.superappzw.ui.theme.SuperAppZWTheme
 @Composable
 fun AppAlert(
     alertType: AppAlertType?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     if (alertType != null) {
         AlertDialog(
@@ -27,23 +27,25 @@ fun AppAlert(
             title = {
                 Text(
                     text = when (alertType) {
-                        is AppAlertType.Info -> alertType.title
-                        is AppAlertType.Confirm -> alertType.title
-                        is AppAlertType.SignOut -> alertType.title
+                        is AppAlertType.Info          -> alertType.title
+                        is AppAlertType.Confirm       -> alertType.title
+                        is AppAlertType.SignOut        -> alertType.title
                         is AppAlertType.DeleteAccount -> alertType.title
+                        is AppAlertType.DeleteListing -> alertType.title
                     },
-                    style = MaterialTheme.typography.headlineSmall
+                    style = MaterialTheme.typography.headlineSmall,
                 )
             },
             text = {
                 Text(
                     text = when (alertType) {
-                        is AppAlertType.Info -> alertType.message
-                        is AppAlertType.Confirm -> alertType.message
-                        is AppAlertType.SignOut -> alertType.message
+                        is AppAlertType.Info          -> alertType.message
+                        is AppAlertType.Confirm       -> alertType.message
+                        is AppAlertType.SignOut        -> alertType.message
                         is AppAlertType.DeleteAccount -> alertType.message
+                        is AppAlertType.DeleteListing -> "This action cannot be undone."
                     },
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             },
             confirmButton = {
@@ -70,7 +72,7 @@ fun AppAlert(
                             onClick = {
                                 alertType.signOutAction?.invoke()
                                 onDismiss()
-                            }
+                            },
                         ) {
                             Text("Sign Out")
                         }
@@ -81,7 +83,18 @@ fun AppAlert(
                             onClick = {
                                 alertType.deleteAction?.invoke()
                                 onDismiss()
-                            }
+                            },
+                        ) {
+                            Text("Delete")
+                        }
+                    }
+                    is AppAlertType.DeleteListing -> {
+                        TextButton(
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red),
+                            onClick = {
+                                alertType.deleteAction?.invoke()
+                                onDismiss()
+                            },
                         ) {
                             Text("Delete")
                         }
@@ -100,20 +113,26 @@ fun AppAlert(
                         }
                     }
                     is AppAlertType.SignOut -> {
-                        TextButton(onClick = onDismiss) {
-                            Text("Cancel")
-                        }
+                        TextButton(onClick = onDismiss) { Text("Cancel") }
                     }
                     is AppAlertType.DeleteAccount -> {
-                        TextButton(onClick = onDismiss) {
+                        TextButton(onClick = onDismiss) { Text("Cancel") }
+                    }
+                    is AppAlertType.DeleteListing -> {
+                        TextButton(onClick = {
+                            alertType.cancelAction?.invoke()
+                            onDismiss()
+                        }) {
                             Text("Cancel")
                         }
                     }
                 }
-            }
+            },
         )
     }
 }
+
+// ── Preview ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true)
 @Composable
@@ -125,11 +144,20 @@ fun AppAlertPreview() {
                 alert = AppAlertType.Confirm(
                     title = "Confirm Action",
                     message = "Are you sure?",
-                    cancelAction = { },
-                    proceedAction = { }
+                    cancelAction = {},
+                    proceedAction = {},
                 )
             }) {
                 Text("Show Confirm")
+            }
+            Button(onClick = {
+                alert = AppAlertType.DeleteListing(
+                    title = "Delete AirPods Pro?",
+                    cancelAction = {},
+                    deleteAction = {},
+                )
+            }) {
+                Text("Show Delete Listing")
             }
             AppAlert(alertType = alert) { alert = null }
         }
