@@ -56,7 +56,7 @@ private fun FloatingActionButtonPreview() {
             FloatingActionButton(
                 onClick = {},
                 modifier = Modifier
-                    .padding(end = 20.dp, bottom = 150.dp),
+                    .padding(end = 20.dp, bottom = 80.dp),
             )
         }
     }
