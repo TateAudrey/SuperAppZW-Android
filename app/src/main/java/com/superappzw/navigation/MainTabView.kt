@@ -23,10 +23,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.model.DailyLanguageModel
+import com.superappzw.ui.account.AccountView
+import com.superappzw.ui.account.ProfileDetailView
 import com.superappzw.ui.favourites.FavouritesView
-import com.superappzw.ui.lisitngs.MyListingsView
 import com.superappzw.ui.home.HomeView
-import com.superappzw.ui.store.StoreListing
+import com.superappzw.ui.lisitngs.MyListingsView
 import com.superappzw.ui.store.StoreListingDetailView
 import com.superappzw.ui.store.StoreProfileView
 import com.superappzw.ui.theme.PrimaryColor
@@ -41,9 +42,6 @@ fun MainTabView(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
-
-    // Inner NavController handles screen-level pushes (e.g. listing detail)
-    // while selectedTab handles bottom nav tab switching independently.
     val navController = rememberNavController()
 
     Scaffold(
@@ -83,16 +81,15 @@ fun MainTabView(
                         dailyLanguage = dailyLanguage,
                         currentUserName = currentUserName,
                         currentUserPhotoUrl = currentUserPhotoUrl,
+                        onProfileTap = { navController.navigate("account") },
                         onCategorySelect = { category ->
                             // TODO: navController.navigate("categoryDetail/${category.name}")
                         },
                         onListingTap = { itemCode, ownerUserID ->
                             val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
                             if (ownerUserID == currentUserID) {
-                                // Owner tapped their own listing — switch to My Listings tab
                                 selectedTab = MainTab.MY_LISTINGS
                             } else {
-                                // Other user's listing — navigate to their full store profile
                                 navController.navigate("storeProfile/$ownerUserID")
                             }
                         },
@@ -100,10 +97,22 @@ fun MainTabView(
                     )
                     MainTab.MY_LISTINGS -> MyListingsView(
                         navController = navController,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.FAVOURITES -> FavouritesView(modifier = Modifier.fillMaxSize())
                 }
+            }
+
+            // ── Account ───────────────────────────────────────────────────────
+            composable("account") {
+                AccountView(navController = navController)
+            }
+
+            // ── Profile detail (from Account → Account Details row) ───────────
+            composable("profileDetail") {
+                ProfileDetailView(
+                    onDismiss = { navController.popBackStack() },
+                )
             }
 
             // ── Store profile ─────────────────────────────────────────────────
@@ -115,11 +124,9 @@ fun MainTabView(
             ) { backStackEntry ->
                 val ownerUserID = backStackEntry.arguments?.getString("ownerUserID")
                     ?: return@composable
-
                 StoreProfileView(
                     storeID = ownerUserID,
                     onNavigateToListing = { listing ->
-                        // User tapped a product card inside a store — go to listing detail
                         navController.navigate("listingDetail/${listing.itemCode}/${listing.ownerUserID}")
                     },
                 )
@@ -135,7 +142,6 @@ fun MainTabView(
             ) { backStackEntry ->
                 val itemCode = backStackEntry.arguments?.getString("itemCode") ?: return@composable
                 val ownerUserID = backStackEntry.arguments?.getString("ownerUserID") ?: return@composable
-
                 StoreListingDetailView(
                     itemCode = itemCode,
                     ownerUserID = ownerUserID,
@@ -145,7 +151,7 @@ fun MainTabView(
     }
 }
 
-// ── Previews ──────────────────────────────────────────────────────────────────
+// ── Preview ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
