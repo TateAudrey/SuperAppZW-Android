@@ -12,7 +12,6 @@ import com.superappzw.ui.components.utils.LoadingView
 import com.superappzw.ui.onboarding.GetStartedScreen
 import com.superappzw.ui.onboarding.OnboardingScreen
 import com.superappzw.ui.screens.ForgotPasswordView
-import com.superappzw.ui.screens.HomeView
 import com.superappzw.ui.screens.SignInView
 import com.superappzw.ui.screens.SignUpView
 
@@ -90,8 +89,15 @@ fun AppNavigation(
 
         // AUTHENTICATED screens
         composable("home") {
+            val dailyLanguage by authStateManager.dailyLanguage.collectAsState()
+            val currentUserName by authStateManager.currentUserName.collectAsState()
+            val currentUserPhotoUrl by authStateManager.currentUserPhotoUrl.collectAsState()
+
             MainTabView(
-                onLogout = { authStateManager.logout() }
+                onLogout = { authStateManager.logout() },
+                dailyLanguage = dailyLanguage,
+                currentUserName = currentUserName,
+                currentUserPhotoUrl = currentUserPhotoUrl,
             )
         }
     }
