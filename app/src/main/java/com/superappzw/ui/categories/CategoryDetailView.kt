@@ -1,20 +1,24 @@
 package com.superappzw.ui.categories
 
-import com.superappzw.ui.components.utils.EmptyStateView
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,14 +26,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.superappzw.ui.components.utils.EmptyStateView
+import com.superappzw.ui.lisitngs.ListingCard
+import com.superappzw.ui.lisitngs.ListingModel
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,28 +56,33 @@ fun CategoryDetailView(
     val listings by viewModel.listings.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Load on first appearance — mirrors Swift .task
     LaunchedEffect(Unit) {
         viewModel.load()
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = Color(0xFFF2F2F7),
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = PrimaryColor,
+                        )
+                    }
+                },
                 title = {
-                    androidx.compose.foundation.layout.Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = category.icon,
                             contentDescription = null,
                             tint = PrimaryColor,
                             modifier = Modifier.size(18.dp),
                         )
-                        androidx.compose.foundation.layout.Spacer(
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
+                        Spacer(modifier = Modifier.size(6.dp))
                         Text(
                             text = category.name,
                             fontSize = 16.sp,
@@ -77,6 +92,7 @@ fun CategoryDetailView(
                         )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
             )
         },
     ) { innerPadding ->
@@ -114,18 +130,44 @@ fun CategoryDetailView(
                     )
                 }
 
-                // ── Grid ──────────────────────────────────────────────────────
+                // ── Listings grid ─────────────────────────────────────────────
+                // Uses LazyColumn with 2-per-row chunked layout —
+                // avoids nested scroll issues with LazyVerticalGrid
                 else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        items(listings) { listing ->
-                            // TODO: Replace with your real ListingCard composable
-                            Text(
-                                text = listing.title,
-                                modifier = Modifier.padding(8.dp),
-                            )
+                        val rows = listings.chunked(2)
+                        items(rows) { rowItems ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                rowItems.forEach { listing ->
+                                    ListingCard(
+                                        model = ListingModel(
+                                            title = listing.title,
+                                            description = listing.description,
+                                            price = listing.price,
+                                            currency = listing.currency,
+                                            itemCode = listing.itemCode,
+                                            imageURL = listing.imageURL,
+                                            viewCount = listing.viewCount,
+                                            ownerUserID = listing.ownerUserID,
+                                        ),
+                                        onTap = {
+                                            onListingTap(listing.itemCode, listing.ownerUserID)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                                // Fill empty slot in last row if odd number of listings
+                                if (rowItems.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
                         }
                     }
                 }

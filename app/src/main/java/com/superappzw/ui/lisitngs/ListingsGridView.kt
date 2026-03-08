@@ -2,13 +2,9 @@ package com.superappzw.ui.lisitngs
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,6 +53,7 @@ fun ListingsGridView(
                             itemCode = listing.itemCode,
                             imageURL = listing.imageURL,
                             viewCount = listing.viewCount,
+                            ownerUserID = listing.ownerUserID,
                         ),
                         onTap = { onTap(listing.itemCode, listing.ownerUserID) },
                         onLongPress = if (isOwner) ({ onLongPress?.invoke(listing) }) else null,

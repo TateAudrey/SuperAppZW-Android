@@ -25,6 +25,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.ui.account.AccountView
 import com.superappzw.ui.account.ProfileDetailView
+import com.superappzw.ui.categories.CategoryDetailView
+import com.superappzw.ui.categories.CategoryItem
 import com.superappzw.ui.favourites.FavouritesView
 import com.superappzw.ui.home.HomeView
 import com.superappzw.ui.lisitngs.MyListingsView
@@ -83,7 +85,9 @@ fun MainTabView(
                         currentUserPhotoUrl = currentUserPhotoUrl,
                         onProfileTap = { navController.navigate("account") },
                         onCategorySelect = { category ->
-                            // TODO: navController.navigate("categoryDetail/${category.name}")
+                            // Pass index so CategoryItem can be reconstructed on the other side
+                            val index = CategoryItem.all.indexOf(category)
+                            if (index >= 0) navController.navigate("categoryDetail/$index")
                         },
                         onListingTap = { itemCode, ownerUserID ->
                             val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
@@ -103,12 +107,38 @@ fun MainTabView(
                 }
             }
 
+            // ── Category detail ───────────────────────────────────────────────
+            composable(
+                route = "categoryDetail/{categoryIndex}",
+                arguments = listOf(
+                    navArgument("categoryIndex") { type = NavType.IntType },
+                ),
+            ) { backStackEntry ->
+                val index = backStackEntry.arguments?.getInt("categoryIndex") ?: return@composable
+                val category = CategoryItem.all.getOrNull(index) ?: return@composable
+                CategoryDetailView(
+                    category = category,
+                    onListingTap = { itemCode, ownerUserID ->
+                        val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
+                        if (ownerUserID == currentUserID) {
+                            // Own listing — pop back to tabs and switch to My Listings
+                            navController.popBackStack("tabs", inclusive = false)
+                            selectedTab = MainTab.MY_LISTINGS
+                        } else {
+                            // Another user's listing — go to their store profile
+                            navController.navigate("storeProfile/$ownerUserID")
+                        }
+                    },
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+
             // ── Account ───────────────────────────────────────────────────────
             composable("account") {
                 AccountView(navController = navController)
             }
 
-            // ── Profile detail (from Account → Account Details row) ───────────
+            // ── Profile detail ────────────────────────────────────────────────
             composable("profileDetail") {
                 ProfileDetailView(
                     onDismiss = { navController.popBackStack() },

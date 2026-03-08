@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.services.DailyLanguageService
+import com.superappzw.services.UserService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,18 +43,33 @@ class AuthStateManager : ViewModel() {
             val user = firebaseAuth.currentUser
             if (user != null) {
                 _authState.value = AuthState.Authenticated(user.uid)
-                _currentUserName.value = user.displayName
                 _currentUserPhotoUrl.value = user.photoUrl?.toString()
-                viewModelScope.launch { fetchDailyLanguage() }
+                viewModelScope.launch {
+                    fetchDailyLanguage()
+                    fetchUserName(user.uid) // ← fetch from Firestore
+                }
             } else {
                 _authState.value = AuthState.Unauthenticated
-                _dailyLanguage.value = null
-                _dailyLanguageError.value = null
                 _currentUserName.value = null
                 _currentUserPhotoUrl.value = null
+                _dailyLanguage.value = null
             }
         }
         auth.addAuthStateListener(authStateListener!!)
+    }
+
+    private suspend fun fetchUserName(uid: String) {
+        try {
+            val profile = UserService.getInstance().fetchProfile(uid)
+            _currentUserName.value = profile.firstName.ifBlank { null }
+            // Also update photo URL from Firestore in case it differs from Auth
+            if (profile.profileImageURL != null) {
+                _currentUserPhotoUrl.value = profile.profileImageURL
+            }
+        } catch (e: Exception) {
+            // Fall back to Firebase Auth displayName if Firestore fetch fails
+            _currentUserName.value = FirebaseAuth.getInstance().currentUser?.displayName
+        }
     }
 
     fun logout() {

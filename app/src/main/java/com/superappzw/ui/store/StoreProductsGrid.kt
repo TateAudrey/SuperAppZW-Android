@@ -50,6 +50,7 @@ fun StoreProductsGrid(
                             itemCode = listing.itemCode,
                             imageURL = listing.imageURL,
                             viewCount = listing.viewCount,
+                            ownerUserID = listing.ownerUserID
                         ),
                         onTap = { onSelect?.invoke(listing) },
                         modifier = Modifier.weight(1f),
