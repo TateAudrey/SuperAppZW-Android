@@ -5,28 +5,9 @@ import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 import android.graphics.Bitmap
 import com.google.firebase.storage.FirebaseStorage
+import com.superappzw.model.PackageLimitModel
 import com.superappzw.model.UserProfileModel
 import java.io.ByteArrayOutputStream
-
-
-
-data class PackageLimitModel(
-    val id: String,
-    val productLimit: Int,
-    val serviceLimit: Int,
-) {
-    companion object {
-        fun fromData(id: String, data: Map<String, Any>): PackageLimitModel? {
-            val productLimit = (data["product_limit"] as? Long)?.toInt() ?: return null
-            val serviceLimit = (data["service_limit"] as? Long)?.toInt() ?: return null
-            return PackageLimitModel(
-                id = id,
-                productLimit = productLimit,
-                serviceLimit = serviceLimit,
-            )
-        }
-    }
-}
 
 class UserService private constructor() {
 

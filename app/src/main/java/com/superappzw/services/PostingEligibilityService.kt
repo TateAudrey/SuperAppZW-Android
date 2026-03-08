@@ -2,6 +2,7 @@ package com.superappzw.services
 
 import com.google.firebase.auth.FirebaseAuth
 
+
 // ── Result ────────────────────────────────────────────────────────────────────
 
 sealed class PostingEligibilityResult {
@@ -36,15 +37,15 @@ class PostingEligibilityService private constructor() {
 
             // Step 3 — Check against limit
             if (isService) {
-                if (serviceCount >= limit.serviceLimit) {
+                if (serviceCount >= limit.maxServices) {
                     return PostingEligibilityResult.LimitReached(
-                        message = "You've reached your package limit of ${limit.serviceLimit} services. Upgrade to post more."
+                        message = "You've reached the ${limit.name} package limit of ${limit.maxServices} services. Upgrade to post more."
                     )
                 }
             } else {
-                if (productCount >= limit.productLimit) {
+                if (productCount >= limit.maxProducts) {
                     return PostingEligibilityResult.LimitReached(
-                        message = "You've reached your package limit of ${limit.productLimit} products. Upgrade to post more."
+                        message = "You've reached the ${limit.name} package limit of ${limit.maxProducts} products. Upgrade to post more."
                     )
                 }
             }
