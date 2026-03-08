@@ -115,6 +115,7 @@ class MyListingsViewModel : ViewModel() {
     fun setSelectedListing(listing: StoreListing?) { _selectedListing.value = listing }
     fun setNavigateToProfile(value: Boolean) { _navigateToProfile.value = value }
     fun dismissAlert() { _alertType.value = null }
+    fun setAlertType(alert: AppAlertType) { _alertType.value = alert }
 
     // ── Present alert ─────────────────────────────────────────────────────────
     // Mirrors Swift's presentAlert — clears loading/pickers before showing,

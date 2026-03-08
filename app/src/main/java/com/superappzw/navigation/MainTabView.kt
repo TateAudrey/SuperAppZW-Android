@@ -98,7 +98,10 @@ fun MainTabView(
                         },
                         modifier = Modifier.fillMaxSize(),
                     )
-                    MainTab.MY_LISTINGS -> MyListingsView(modifier = Modifier.fillMaxSize())
+                    MainTab.MY_LISTINGS -> MyListingsView(
+                        navController = navController,
+                        modifier = Modifier.fillMaxSize()
+                    )
                     MainTab.FAVOURITES -> FavouritesView(modifier = Modifier.fillMaxSize())
                 }
             }

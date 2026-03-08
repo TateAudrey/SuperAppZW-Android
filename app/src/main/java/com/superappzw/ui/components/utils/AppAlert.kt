@@ -43,7 +43,7 @@ fun AppAlert(
                         is AppAlertType.Confirm       -> alertType.message
                         is AppAlertType.SignOut        -> alertType.message
                         is AppAlertType.DeleteAccount -> alertType.message
-                        is AppAlertType.DeleteListing -> "This action cannot be undone."
+                        is AppAlertType.DeleteListing -> alertType.message
                     },
                     style = MaterialTheme.typography.bodyLarge,
                 )

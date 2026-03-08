@@ -28,6 +28,7 @@ sealed class AppAlertType {
 
     data class DeleteListing(
         val title: String,
+        val message: String = "This action cannot be undone.",
         val cancelAction: (() -> Unit)? = null,
         val deleteAction: (() -> Unit)? = null,
     ) : AppAlertType()
