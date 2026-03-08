@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.superappzw.ui.categories.CategoryItem
+import com.superappzw.ui.components.utils.rememberCameraLauncher
 import com.superappzw.ui.components.utils.rememberImagePickerLauncher
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
@@ -86,7 +87,14 @@ fun PostFormView(
     var showCategoryDropdown by remember { mutableStateOf(false) }
     var showCurrencyDropdown by remember { mutableStateOf(false) }
 
+    // Gallery picker — same as before
     val pickImage = rememberImagePickerLauncher { bitmap ->
+        onImageSelected(bitmap)
+        showImageSourceSheet = false
+    }
+
+    // Camera launcher — new
+    val takePhoto = rememberCameraLauncher { bitmap ->
         onImageSelected(bitmap)
         showImageSourceSheet = false
     }
@@ -124,7 +132,6 @@ fun PostFormView(
                             .fillMaxSize()
                             .clip(RoundedCornerShape(12.dp)),
                     )
-                    // "Change" badge — bottom trailing
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -174,7 +181,6 @@ fun PostFormView(
 
         // ── Listing details ───────────────────────────────────────────────────
         FormSection(title = "LISTING DETAILS") {
-            // Listing type — static label (product only in this form)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -188,16 +194,11 @@ fun PostFormView(
                     color = Color.Black,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    text = "Product",
-                    fontSize = 15.sp,
-                    color = Color.Gray,
-                )
+                Text(text = "Product", fontSize = 15.sp, color = Color.Gray)
             }
 
             SectionDivider()
 
-            // Category picker
             ExposedDropdownMenuBox(
                 expanded = showCategoryDropdown,
                 onExpandedChange = { showCategoryDropdown = it },
@@ -214,9 +215,7 @@ fun PostFormView(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                     ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
                 )
                 ExposedDropdownMenu(
                     expanded = showCategoryDropdown,
@@ -236,7 +235,6 @@ fun PostFormView(
 
             SectionDivider()
 
-            // Product name
             FormTextField(
                 placeholder = "Product Name",
                 value = productName,
@@ -248,11 +246,8 @@ fun PostFormView(
         FormSection(title = "PRICING") {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
             ) {
-                // Currency dropdown
                 ExposedDropdownMenuBox(
                     expanded = showCurrencyDropdown,
                     onExpandedChange = { showCurrencyDropdown = it },
@@ -287,7 +282,6 @@ fun PostFormView(
                     }
                 }
 
-                // Price input
                 OutlinedTextField(
                     value = priceText,
                     onValueChange = onPriceTextChange,
@@ -341,21 +335,11 @@ fun PostFormView(
                 disabledContainerColor = PrimaryColor.copy(alpha = 0.4f),
                 disabledContentColor = Color.White,
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
+            modifier = Modifier.fillMaxWidth().height(54.dp),
         ) {
-            Icon(
-                imageVector = Icons.Filled.Send,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
+            Icon(imageVector = Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Publish Listing",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Text(text = "Publish Listing", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 
@@ -381,19 +365,36 @@ fun PostFormView(
                     color = PrimaryColor,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
+
+                // Take photo — camera
+                Button(
+                    onClick = {
+                        showImageSourceSheet = false
+                        takePhoto()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                ) {
+                    Text("Take Photo", fontWeight = FontWeight.SemiBold)
+                }
+
+                // Choose from library
                 Button(
                     onClick = {
                         showImageSourceSheet = false
                         pickImage()
                     },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE5E5EA),
+                        contentColor = Color.Black,
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
                 ) {
                     Text("Choose from Library", fontWeight = FontWeight.SemiBold)
                 }
+
                 TextButton(
                     onClick = { showImageSourceSheet = false },
                     modifier = Modifier.fillMaxWidth(),
