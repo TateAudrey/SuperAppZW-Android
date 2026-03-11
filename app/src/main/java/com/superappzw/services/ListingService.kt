@@ -26,6 +26,7 @@ class ListingService {
         description: String,
         imageData: ByteArray?,
         userId: String,
+        location: String = "",          // ← added
     ) {
         ensureListingsDocumentExists(userId)
         publishListingData(
@@ -37,6 +38,7 @@ class ListingService {
             description = description,
             imageData = imageData,
             userId = userId,
+            location = location,
         )
     }
 
@@ -49,6 +51,7 @@ class ListingService {
         description: String,
         imageData: ByteArray?,
         userId: String,
+        location: String = "",          // ← added
     ) {
         val userDocRef = db.collection("listings").document(userId)
         val itemCode = generateUniqueItemCode()
@@ -56,18 +59,20 @@ class ListingService {
 
         if (type == ListingType.PRODUCT) {
             val imageURL = if (imageData != null) uploadImage(imageData, userId) else ""
+            val normalizedPrice = priceText?.replace(",", ".") ?: ""
 
             val listing = mapOf(
-                "title" to title,
-                "category" to category,
-                "currency" to currency,
-                "price" to (priceText?.replace(",", ".") ?: ""),
+                "title"       to title,
+                "category"    to category,
+                "currency"    to currency,
+                "price"       to normalizedPrice,
                 "description" to description,
-                "itemCode" to itemCode,
-                "imageURL" to imageURL,
-                "viewCount" to 0,
-                "createdAt" to clientTimestamp,
-                "type" to type.value,
+                "itemCode"    to itemCode,
+                "imageURL"    to imageURL,
+                "viewCount"   to 0,
+                "createdAt"   to clientTimestamp,
+                "type"        to type.value,
+                "location"    to location,      // ← added
             )
 
             userDocRef.update("myListings", FieldValue.arrayUnion(listing)).await()
@@ -103,19 +108,15 @@ class ListingService {
 
     suspend fun recordView(itemCode: String, ownerUserID: String) {
         val currentUserID = auth.currentUser?.uid ?: return
-
-        // Never count the owner viewing their own listing
         if (currentUserID == ownerUserID) return
 
         val ownerDocument = db.collection("listings").document(ownerUserID)
         val viewDocumentID = "${currentUserID}_${itemCode}"
         val viewDocument = ownerDocument.collection("views").document(viewDocumentID)
 
-        // Already viewed — do nothing
         val viewSnapshot = viewDocument.get().await()
         if (viewSnapshot.exists()) return
 
-        // Read myListings to update viewCount
         val ownerSnapshot = ownerDocument.get().await()
         val data = ownerSnapshot.data ?: return
 
@@ -130,25 +131,21 @@ class ListingService {
         val currentCount = (myListings[index]["viewCount"] as? Long)?.toInt() ?: 0
         myListings[index]["viewCount"] = currentCount + 1
 
-        // Batch both writes atomically
         val batch = db.batch()
-
         batch.set(
             viewDocument,
             mapOf(
-                "itemCode" to itemCode,
-                "ownerUserID" to ownerUserID,
+                "itemCode"     to itemCode,
+                "ownerUserID"  to ownerUserID,
                 "viewerUserID" to currentUserID,
-                "viewedAt" to FieldValue.serverTimestamp(),
+                "viewedAt"     to FieldValue.serverTimestamp(),
             )
         )
-
         batch.set(
             ownerDocument,
             mapOf("myListings" to myListings),
             com.google.firebase.firestore.SetOptions.merge(),
         )
-
         batch.commit().await()
     }
 
@@ -235,12 +232,12 @@ class ListingService {
         val imageURL = targetListing["imageURL"] as? String
             ?: throw ListingError.InvalidData("The listing does not have a valid imageURL.")
 
-        // Write updated array without the deleted listing
         val updatedListings = myListings.filter { it["itemCode"] as? String != itemCode }
-        userDocument.set(mapOf("myListings" to updatedListings),
-            com.google.firebase.firestore.SetOptions.merge()).await()
+        userDocument.set(
+            mapOf("myListings" to updatedListings),
+            com.google.firebase.firestore.SetOptions.merge()
+        ).await()
 
-        // Delete image from Storage — verify path belongs to current user
         if (imageURL.isNotBlank()) {
             val imageStorageRef = storage.getReferenceFromUrl(imageURL)
             if (!imageStorageRef.path.contains(userID)) {
@@ -274,8 +271,8 @@ class ListingService {
             mapOf(
                 "myListings" to emptyList<Any>(),
                 "myServices" to emptyList<Any>(),
-                "userId" to userID,
-                "createdAt" to Timestamp.now(),
+                "userId"     to userID,
+                "createdAt"  to Timestamp.now(),
             ),
             com.google.firebase.firestore.SetOptions.merge(),
         ).await()
@@ -284,24 +281,28 @@ class ListingService {
     // ── Mapping helper ────────────────────────────────────────────────────────
 
     private fun Map<String, Any>.toStoreListing(ownerUserID: String): StoreListing? {
-        val title = this["title"] as? String ?: return null
-        val itemCode = this["itemCode"] as? String ?: return null
-        val imageURLString = this["imageURL"] as? String ?: return null
-        val priceString = this["price"] as? String ?: return null
-        val currency = this["currency"] as? String ?: return null
-        val price = priceString.toDoubleOrNull() ?: return null
-        val viewCount = (this["viewCount"] as? Long)?.toInt() ?: 0
-        val description = this["description"] as? String ?: ""
+        val title          = this["title"]       as? String ?: return null
+        val itemCode       = this["itemCode"]     as? String ?: return null
+        val imageURLString = this["imageURL"]     as? String ?: return null
+        val priceString    = this["price"]        as? String ?: return null
+        val currency       = this["currency"]     as? String ?: return null
+        val viewCount      = (this["viewCount"]   as? Long)?.toInt() ?: 0
+        val description    = this["description"]  as? String ?: ""
+        val location       = this["location"]     as? String ?: ""      // ← added
+        val isNegotiable   = priceString.trim() == "Negotiable"         // ← added
+        val price          = if (isNegotiable) 0.0 else priceString.toDoubleOrNull() ?: 0.0
 
         return StoreListing(
-            title = title,
-            description = description,
-            price = price,
-            currency = currency,
-            itemCode = itemCode,
-            imageURL = imageURLString.takeIf { it.isNotBlank() },
-            viewCount = viewCount,
-            ownerUserID = ownerUserID,
+            title        = title,
+            description  = description,
+            price        = price,
+            currency     = currency,
+            itemCode     = itemCode,
+            imageURL     = imageURLString.takeIf { it.isNotBlank() },
+            viewCount    = viewCount,
+            ownerUserID  = ownerUserID,
+            location     = location,        // ← added
+            isNegotiable = isNegotiable,    // ← added
         )
     }
 }
