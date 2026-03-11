@@ -44,6 +44,7 @@ fun HomeView(
     provinceViewModel: ProvinceViewModel = viewModel(),
     billboardViewModel: BillboardViewModel = viewModel(),
     homeViewModel: HomeViewModel = viewModel(),
+    onStoreTap: ((userID: String) -> Unit)? = null
 ) {
     // ── Derived values ────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ fun HomeView(
             // ── Billboard carousel ────────────────────────────────────────────
             BillboardSectionView(
                 viewModel = billboardViewModel,
-                onTap = { /* TODO: navigate to listing */ },
+                onStoreTap = { userID -> onStoreTap?.invoke(userID) },
                 modifier = Modifier.padding(top = 16.dp),
             )
 

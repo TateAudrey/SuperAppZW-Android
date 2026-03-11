@@ -100,6 +100,14 @@ fun MainTabView(
                                 navController.navigate("storeProfile/$ownerUserID")
                             }
                         },
+                        onStoreTap = { userID ->                              // ← add this
+                            val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
+                            if (userID == currentUserID) {
+                                selectedTab = MainTab.MY_LISTINGS            // own billboard → My Listings
+                            } else {
+                                navController.navigate("storeProfile/$userID") // others → store profile
+                            }
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.MY_LISTINGS -> MyListingsView(

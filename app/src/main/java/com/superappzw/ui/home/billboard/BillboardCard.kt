@@ -37,7 +37,7 @@ fun BillboardCard(
     item: BillboardItemModel,
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
-) {
+){
     Box(
         modifier = modifier
             .fillMaxWidth()

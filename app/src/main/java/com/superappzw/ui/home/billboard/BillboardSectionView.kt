@@ -37,9 +37,9 @@ import com.superappzw.ui.theme.SuperAppZWTheme
 @Composable
 fun BillboardSectionView(
     viewModel: BillboardViewModel,
-    onTap: () -> Unit,
+    onStoreTap: (userID: String) -> Unit,
     modifier: Modifier = Modifier,
-) {
+){
     val items by viewModel.items.collectAsState()
     val currentIndex by viewModel.currentIndex.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -106,7 +106,7 @@ fun BillboardSectionView(
                 ) { page ->
                     BillboardCard(
                         item = items[page],
-                        onTap = onTap,
+                        onTap = { onStoreTap(items[page].userID) },
                         modifier = Modifier.padding(horizontal = 20.dp),
                     )
                 }
