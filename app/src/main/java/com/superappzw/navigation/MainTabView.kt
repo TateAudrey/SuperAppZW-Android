@@ -11,11 +11,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -79,7 +81,12 @@ fun MainTabView(
                 .padding(innerPadding),
         ) {
             // ── Tab container ─────────────────────────────────────────────────
-            composable("tabs") {
+            composable("tabs") { backStackEntry ->
+                // Scope all ViewModels to the "tabs" destination so they survive navigation
+                val tabsEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry("tabs")
+                }
+
                 when (selectedTab) {
                     MainTab.HOME -> HomeView(
                         onLogout = onLogout,
@@ -88,7 +95,6 @@ fun MainTabView(
                         currentUserPhotoUrl = currentUserPhotoUrl,
                         onProfileTap = { navController.navigate("account") },
                         onCategorySelect = { category ->
-                            // Pass index so CategoryItem can be reconstructed on the other side
                             val index = CategoryItem.all.indexOf(category)
                             if (index >= 0) navController.navigate("categoryDetail/$index")
                         },
@@ -100,18 +106,23 @@ fun MainTabView(
                                 navController.navigate("storeProfile/$ownerUserID")
                             }
                         },
-                        onStoreTap = { userID ->                              // ← add this
+                        onStoreTap = { userID ->
                             val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
                             if (userID == currentUserID) {
-                                selectedTab = MainTab.MY_LISTINGS            // own billboard → My Listings
+                                selectedTab = MainTab.MY_LISTINGS
                             } else {
-                                navController.navigate("storeProfile/$userID") // others → store profile
+                                navController.navigate("storeProfile/$userID")
                             }
                         },
+                        // ── Scoped ViewModels ─────────────────────────────────────────
+                        provinceViewModel = viewModel(tabsEntry),
+                        billboardViewModel = viewModel(tabsEntry),
+                        homeViewModel = viewModel(tabsEntry),
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.MY_LISTINGS -> MyListingsView(
                         navController = navController,
+                        viewModel = viewModel(tabsEntry),  // ← add this
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.FAVOURITES -> FavouritesView(modifier = Modifier.fillMaxSize())

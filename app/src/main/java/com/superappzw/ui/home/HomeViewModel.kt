@@ -28,8 +28,9 @@ class HomeViewModel : ViewModel() {
 
     // ── Load once (seed from cache if available) ──────────────────────────────
 
-    fun loadFeaturedListings(province: String? = null) {
-        if (hasLoaded) return
+
+    fun loadFeaturedListings(province: String?) {
+        if (hasLoaded) return   // ← don't reload if data already exists
         viewModelScope.launch { fetch(province) }
     }
 

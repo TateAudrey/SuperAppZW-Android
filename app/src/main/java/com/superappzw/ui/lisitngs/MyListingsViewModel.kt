@@ -117,6 +117,8 @@ class MyListingsViewModel : ViewModel() {
     fun dismissAlert() { _alertType.value = null }
     fun setAlertType(alert: AppAlertType) { _alertType.value = alert }
 
+    private var hasLoaded = false
+
     // ── Present alert ─────────────────────────────────────────────────────────
     // Mirrors Swift's presentAlert — clears loading/pickers before showing,
     // with an 80ms delay to let layout settle before the dialog appears.
@@ -135,12 +137,12 @@ class MyListingsViewModel : ViewModel() {
     // ── Load user data ────────────────────────────────────────────────────────
 
     fun loadUserData(forceRefresh: Boolean = false) {
+        if (hasLoaded && !forceRefresh) return  // ← skip if already loaded unless forced
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Fetch products, services, and reviews concurrently
                 val productsDeferred = async { listingService.fetchUserListings(uid) }
                 val servicesDeferred = async { listingService.fetchUserServices(uid) }
                 val reviewsDeferred  = async { loadReceivedReviewsInternal(uid) }
@@ -148,6 +150,7 @@ class MyListingsViewModel : ViewModel() {
                 _myProducts.value = productsDeferred.await()
                 _myServices.value = servicesDeferred.await()
                 reviewsDeferred.await()
+                hasLoaded = true  // ← mark as loaded only on success
             } catch (e: Exception) {
                 println("MyListingsViewModel: loadUserData error — ${e.message}")
             } finally {

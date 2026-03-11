@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -77,14 +78,22 @@ fun HomeView(
 
     // ── Load on first appearance ──────────────────────────────────────────────
 
+// ── Load on first appearance ──────────────────────────────────────────────
+
+    val isFirstLoad = remember { mutableStateOf(true) }
+
     LaunchedEffect(Unit) {
         billboardViewModel.load()
         homeViewModel.loadFeaturedListings(province = selectedProvince)
     }
 
-    // ── Re-fetch when province changes ────────────────────────────────────────
+// ── Re-fetch when province changes ────────────────────────────────────────
 
     LaunchedEffect(selectedProvince) {
+        if (isFirstLoad.value) {
+            isFirstLoad.value = false
+            return@LaunchedEffect
+        }
         homeViewModel.refreshListings(province = selectedProvince)
     }
 
