@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
+import com.superappzw.appPolicy.AppPoliciesView
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.ui.account.AccountView
 import com.superappzw.ui.account.ProfileDetailView
@@ -182,6 +183,12 @@ fun MainTabView(
                         navController.navigate("listingDetail/${listing.itemCode}/${listing.ownerUserID}")
                     },
                 )
+            }
+
+            //Policies
+
+            composable("policies") {
+                AppPoliciesView()
             }
 
             // ── Listing detail ────────────────────────────────────────────────

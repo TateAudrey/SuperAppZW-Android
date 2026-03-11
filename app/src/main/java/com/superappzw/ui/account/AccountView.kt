@@ -151,7 +151,7 @@ fun AccountView(
                 AccountNavRow(
                     icon = Icons.Filled.Description,
                     label = "App Policies & Guidelines",
-                    onClick = { /* TODO */ },
+                    onClick = { navController.navigate("policies") },
                 )
                 SectionDivider()
                 AccountNavRow(
