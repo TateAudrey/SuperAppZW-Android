@@ -1,5 +1,9 @@
 package com.superappzw.ui.store
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,6 +58,7 @@ fun StoreProfileView(
     storeProfileViewModel: StoreProfileViewModel = viewModel(),
     reviewViewModel: ReviewViewModel = viewModel(),
 ) {
+    val context = LocalContext.current
     val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
 
     var selectedTab by rememberSaveable { mutableStateOf(StoreTab.PRODUCTS) }
@@ -67,6 +73,7 @@ fun StoreProfileView(
     val products by storeProfileViewModel.products.collectAsState()
     val services by storeProfileViewModel.services.collectAsState()
     val isLoading by storeProfileViewModel.isLoading.collectAsState()
+    val phoneNumber by storeProfileViewModel.phoneNumber.collectAsState()
 
     val hasReviewed by reviewViewModel.hasReviewed.collectAsState()
     val isSubmitting by reviewViewModel.isSubmitting.collectAsState()
@@ -97,7 +104,7 @@ fun StoreProfileView(
                     },
                     actions = {
                         if (selectedTab == StoreTab.REVIEWS) {
-                            // Hide pencil if the current user owns this store
+                            // Show pencil only if viewing someone else's store
                             if (storeID != currentUserID) {
                                 IconButton(onClick = { showPostReview = true }) {
                                     Icon(
@@ -110,12 +117,15 @@ fun StoreProfileView(
                                 }
                             }
                         } else {
-                            // Phone button — no-op for now
-                            IconButton(onClick = { }) {
+                            // WhatsApp button — disabled until phone number is loaded
+                            IconButton(
+                                onClick = { openWhatsApp(phoneNumber, storeName, context) },
+                                enabled = !phoneNumber.isNullOrBlank(),
+                            ) {
                                 Icon(
                                     imageVector = Icons.Filled.Phone,
-                                    contentDescription = "Contact",
-                                    tint = Color(0xFF34C759), // iOS .green equivalent
+                                    contentDescription = "Contact via WhatsApp",
+                                    tint = if (!phoneNumber.isNullOrBlank()) Color(0xFF34C759) else Color.Gray,
                                 )
                             }
                         }
@@ -188,6 +198,33 @@ fun StoreProfileView(
     }
 }
 
+// ── WhatsApp deep link ────────────────────────────────────────────────────────
+
+private fun openWhatsApp(phoneNumber: String?, storeName: String, context: Context) {
+    if (phoneNumber.isNullOrBlank()) return
+
+    val name = storeName.ifBlank { "your store" }
+    val message = "Hi! I came across $name on Super App ZW and I'm interested in your " +
+            "products and services. Could you please share more details? " +
+            "Looking forward to hearing from you!"
+
+    val encoded = Uri.encode(message)
+    val cleanedNumber = phoneNumber.trim().replace(" ", "")
+    val url = "https://wa.me/$cleanedNumber?text=$encoded"
+
+    // Try opening in the WhatsApp app first, fall back to browser (wa.me works in Safari/Chrome)
+    val whatsAppIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+        setPackage("com.whatsapp")
+    }
+
+    try {
+        context.startActivity(whatsAppIntent)
+    } catch (e: ActivityNotFoundException) {
+        // WhatsApp not installed — open in browser
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+}
+
 // ── Products tab ──────────────────────────────────────────────────────────────
 
 @Composable
@@ -217,7 +254,6 @@ private fun ProductsTab(
             )
         }
         else -> {
-            // Look up the full StoreListing by itemCode so we can pass it to the detail view
             val listingMap = remember(products) { products.associateBy { it.itemCode } }
             ListingsGridView(
                 listings = products,

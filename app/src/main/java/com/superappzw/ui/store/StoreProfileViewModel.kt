@@ -30,6 +30,9 @@ class StoreProfileViewModel : ViewModel() {
     private val _profileImageURL = MutableStateFlow<String?>(null)
     val profileImageURL: StateFlow<String?> = _profileImageURL.asStateFlow()
 
+    private val _phoneNumber = MutableStateFlow<String?>(null)
+    val phoneNumber: StateFlow<String?> = _phoneNumber.asStateFlow()
+
     private val _ownerUID = MutableStateFlow("")
     val ownerUID: StateFlow<String> = _ownerUID.asStateFlow()
 
@@ -60,7 +63,6 @@ class StoreProfileViewModel : ViewModel() {
             _errorMessage.value = null
 
             try {
-                // Step 1: Fetch the user profile using the storeID as the uid.
                 val profile: UserProfileModel = userService.fetchProfile(uid = storeID)
 
                 _ownerUID.value = storeID
@@ -69,8 +71,9 @@ class StoreProfileViewModel : ViewModel() {
                 _suburb.value = profile.suburb
                 _location.value = profile.location
                 _profileImageURL.value = profile.profileImageURL
+                _phoneNumber.value = profile.phoneNumber.ifBlank { null }
 
-                // Step 2: Fetch products and services in parallel — mirrors Swift's async let.
+                // Fetch products and services in parallel — mirrors Swift's async let
                 val productsDeferred = async { listingService.fetchUserListings(storeID) }
                 val servicesDeferred = async { listingService.fetchUserServices(storeID) }
 
