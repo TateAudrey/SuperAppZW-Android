@@ -26,6 +26,7 @@ import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.appPolicy.AppPoliciesView
 import com.superappzw.model.DailyLanguageModel
+import com.superappzw.support.SupportView
 import com.superappzw.ui.account.AccountView
 import com.superappzw.ui.account.ProfileDetailView
 import com.superappzw.ui.categories.CategoryDetailView
@@ -189,6 +190,13 @@ fun MainTabView(
 
             composable("policies") {
                 AppPoliciesView()
+            }
+
+            //Support
+            composable("support") {
+                SupportView(
+                    currentUserName = currentUserName
+                )
             }
 
             // ── Listing detail ────────────────────────────────────────────────

@@ -142,6 +142,7 @@ fun AccountView(
                     onClick = { navController.navigate("profileDetail") },
                 )
                 SectionDivider()
+                //TODO: - Setup later
 //                AccountNavRow(
 //                    icon = Icons.Filled.Lightbulb,
 //                    label = "Activate Premium",
@@ -157,7 +158,7 @@ fun AccountView(
                 AccountNavRow(
                     icon = Icons.Filled.Headphones,
                     label = "Support",
-                    onClick = { /* TODO */ },
+                    onClick = { navController.navigate("support") },
                 )
             }
 
