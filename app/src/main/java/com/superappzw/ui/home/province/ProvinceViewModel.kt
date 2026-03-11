@@ -30,22 +30,33 @@ class ProvinceViewModel(application: Application) : AndroidViewModel(application
         _selectedProvince.value = prefs.getString(selectedKey, null)
     }
 
-    fun selectProvince(province: String) {
-        _selectedProvince.value = province
-        prefs.edit().putString(selectedKey, province).apply()
+    fun clearSelection() {
+        _selectedProvince.value = null
+        prefs.edit().remove(selectedKey).apply()
     }
 
     fun load() {
-        if (_provinces.value.isNotEmpty()) return  // Don't re-fetch if already loaded
+        if (_provinces.value.isNotEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _provinces.value = service.fetchProvinces()
+                val fetched = service.fetchProvinces()
+                // Prepend "All Provinces" so the user can always reset the filter
+                _provinces.value = listOf("All Provinces") + fetched
             } catch (e: Exception) {
-                // TODO: expose error state if needed
+                // expose error if needed
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    fun selectProvince(province: String) {
+        if (province == "All Provinces") {
+            clearSelection()
+        } else {
+            _selectedProvince.value = province
+            prefs.edit().putString(selectedKey, province).apply()
         }
     }
 }

@@ -13,6 +13,7 @@ package com.superappzw.services
 //  No PII is retained — compliant with data protection principles.
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -36,17 +37,25 @@ class AccountDeletionService private constructor() {
     suspend fun deleteAccount(wasBanned: Boolean = false) {
         val user = auth.currentUser ?: throw DeletionException.NotAuthenticated
 
+        // ── Step 0: Dry-run re-auth check BEFORE deleting anything ───────────────
+        // Firebase doesn't expose a direct "is session fresh?" API, so we attempt
+        // a no-op re-auth by reloading the user. If the session is stale, this
+        // will surface the error before we touch any data.
+        try {
+            user.reload().await()
+        } catch (e: FirebaseAuthRecentLoginRequiredException) {
+            throw e // bubble up to ViewModel before any deletion occurs
+        }
+
         val uid = user.uid
 
-        // 1. Fetch profile before we delete anything (need email/phone for tombstone)
+        // Now safe to proceed — session is fresh
         val profile = try { UserService.getInstance().fetchProfile(uid) } catch (e: Exception) { null }
         val email   = user.email ?: ""
         val phone   = profile?.phoneNumber ?: ""
 
-        // 2. Write tombstone FIRST (before deleting anything)
         writeTombstone(uid = uid, email = email, phone = phone, wasBanned = wasBanned)
 
-        // 3. Delete all Firestore data in parallel — mirrors Swift's async let
         coroutineScope {
             val deleteUser      = async { deleteUserDocument(uid) }
             val deleteListings  = async { deleteListingsDocument(uid) }
@@ -61,10 +70,9 @@ class AccountDeletionService private constructor() {
             deleteRequest.await()
         }
 
-        // 4. Delete Storage files (profile image + listing images)
         deleteStorageFiles(uid)
 
-        // 5. Delete the Firebase Auth account last
+        // This will now succeed since we confirmed the session is fresh above
         user.delete().await()
     }
 

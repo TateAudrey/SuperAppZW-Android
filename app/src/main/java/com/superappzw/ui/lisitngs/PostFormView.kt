@@ -1,6 +1,7 @@
 package com.superappzw.ui.lisitngs
 
 import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -35,10 +37,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,10 +58,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.superappzw.ui.categories.CategoryItem
 import com.superappzw.ui.components.utils.rememberCameraLauncher
 import com.superappzw.ui.components.utils.rememberImagePickerLauncher
+import com.superappzw.ui.home.province.ProvinceViewModel
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 
@@ -67,33 +74,49 @@ fun PostFormView(
     onCategorySelected: (CategoryItem) -> Unit,
     selectedCurrency: ListingCurrency,
     onCurrencySelected: (ListingCurrency) -> Unit,
+    selectedLocation: String,
+    onLocationSelected: (String) -> Unit,
     productName: String,
     onProductNameChange: (String) -> Unit,
     priceText: String,
     onPriceTextChange: (String) -> Unit,
+    isNegotiable: Boolean,
+    onNegotiableChange: (Boolean) -> Unit,
     description: String,
     onDescriptionChange: (String) -> Unit,
     selectedImage: Bitmap?,
     onImageSelected: (Bitmap?) -> Unit,
     onPublish: () -> Unit,
     modifier: Modifier = Modifier,
+    provinceViewModel: ProvinceViewModel = viewModel(),
 ) {
+    // Mirrors Swift's isFormValid — price only required when not negotiable
     val isFormValid = productName.isNotBlank() &&
             description.isNotBlank() &&
-            priceText.isNotBlank() &&
-            selectedImage != null
+            (isNegotiable || priceText.isNotBlank()) &&
+            selectedImage != null &&
+            selectedLocation.isNotBlank()
+
+    // Collect the VM's three independent StateFlows directly
+    val provinces by provinceViewModel.provinces.collectAsState()
+    val isLoadingProvinces by provinceViewModel.isLoading.collectAsState()
 
     var showImageSourceSheet by remember { mutableStateOf(false) }
     var showCategoryDropdown by remember { mutableStateOf(false) }
     var showCurrencyDropdown by remember { mutableStateOf(false) }
+    var showLocationDropdown by remember { mutableStateOf(false) }
 
-    // Gallery picker — same as before
+    // Mirrors SwiftUI's .task { await provinceViewModel.load() }
+    // The VM guards against duplicate fetches internally
+    LaunchedEffect(Unit) {
+        provinceViewModel.load()
+    }
+
     val pickImage = rememberImagePickerLauncher { bitmap ->
         onImageSelected(bitmap)
         showImageSourceSheet = false
     }
 
-    // Camera launcher — new
     val takePhoto = rememberCameraLauncher { bitmap ->
         onImageSelected(bitmap)
         showImageSourceSheet = false
@@ -208,14 +231,18 @@ fun PostFormView(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Category") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown)
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color.Transparent,
                         unfocusedBorderColor = Color.Transparent,
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                     ),
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
                 )
                 ExposedDropdownMenu(
                     expanded = showCategoryDropdown,
@@ -242,60 +269,171 @@ fun PostFormView(
             )
         }
 
-        // ── Pricing ───────────────────────────────────────────────────────────
-        FormSection(title = "PRICING") {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
-            ) {
+        // ── Location ──────────────────────────────────────────────────────────
+        FormSection(title = "LOCATION") {
+            if (isLoadingProvinces) {
+                // Mirrors the ProgressView row in SwiftUI
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                ) {
+                    Text(
+                        text = "Loading provinces…",
+                        fontSize = 15.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.weight(1f),
+                    )
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = PrimaryColor,
+                    )
+                }
+            } else {
                 ExposedDropdownMenuBox(
-                    expanded = showCurrencyDropdown,
-                    onExpandedChange = { showCurrencyDropdown = it },
-                    modifier = Modifier.width(130.dp),
+                    expanded = showLocationDropdown,
+                    onExpandedChange = { showLocationDropdown = it },
                 ) {
                     OutlinedTextField(
-                        value = selectedCurrency.label,
+                        value = selectedLocation.ifBlank { "Select a province" },
                         onValueChange = {},
                         readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCurrencyDropdown) },
+                        label = { Text("Province") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showLocationDropdown)
+                        },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.Transparent,
                             unfocusedBorderColor = Color.Transparent,
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
                         ),
-                        modifier = Modifier.menuAnchor(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
                     )
                     ExposedDropdownMenu(
-                        expanded = showCurrencyDropdown,
-                        onDismissRequest = { showCurrencyDropdown = false },
+                        expanded = showLocationDropdown,
+                        onDismissRequest = { showLocationDropdown = false },
                     ) {
-                        ListingCurrency.entries.forEach { currency ->
+                        provinces.forEach { province ->
                             DropdownMenuItem(
-                                text = { Text(currency.label) },
+                                text = { Text(province, fontSize = 14.sp) },
                                 onClick = {
-                                    onCurrencySelected(currency)
-                                    showCurrencyDropdown = false
+                                    // Drive both the form state and the VM (persists to prefs)
+                                    onLocationSelected(province)
+                                    provinceViewModel.selectProvince(province)
+                                    showLocationDropdown = false
                                 },
                             )
                         }
                     }
                 }
+            }
+        }
 
-                OutlinedTextField(
-                    value = priceText,
-                    onValueChange = onPriceTextChange,
-                    placeholder = { Text("0.00", color = Color(0xFFBDBDBD)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                    ),
-                    modifier = Modifier.weight(1f),
+        // ── Pricing ───────────────────────────────────────────────────────────
+        FormSection(title = "PRICING") {
+
+            // Negotiable toggle — mirrors SwiftUI Toggle with subtitle label
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Negotiable",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black,
+                    )
+                    Text(
+                        text = "Hide price and mark as negotiable",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                    )
+                }
+                Switch(
+                    checked = isNegotiable,
+                    onCheckedChange = { checked ->
+                        onNegotiableChange(checked)
+                        // Clear price text when toggling on —
+                        // mirrors Swift's .onChange(of: isNegotiable) { if $0 { priceText = "" } }
+                        if (checked) onPriceTextChange("")
+                    },
                 )
+            }
+
+            // Price row — animated collapse when negotiable is enabled.
+            // AnimatedVisibility gives a smooth slide/fade, equivalent to
+            // SwiftUI's implicit Form animation on conditional view removal.
+            AnimatedVisibility(visible = !isNegotiable) {
+                Column {
+                    SectionDivider()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 4.dp),
+                    ) {
+                        ExposedDropdownMenuBox(
+                            expanded = showCurrencyDropdown,
+                            onExpandedChange = { showCurrencyDropdown = it },
+                            modifier = Modifier.width(130.dp),
+                        ) {
+                            OutlinedTextField(
+                                value = selectedCurrency.label,
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                        expanded = showCurrencyDropdown,
+                                    )
+                                },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                ),
+                                modifier = Modifier.menuAnchor(),
+                            )
+                            ExposedDropdownMenu(
+                                expanded = showCurrencyDropdown,
+                                onDismissRequest = { showCurrencyDropdown = false },
+                            ) {
+                                ListingCurrency.entries.forEach { currency ->
+                                    DropdownMenuItem(
+                                        text = { Text(currency.label) },
+                                        onClick = {
+                                            onCurrencySelected(currency)
+                                            showCurrencyDropdown = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = priceText,
+                            onValueChange = onPriceTextChange,
+                            placeholder = { Text("0.00", color = Color(0xFFBDBDBD)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
         }
 
@@ -304,7 +442,7 @@ fun PostFormView(
             OutlinedTextField(
                 value = description,
                 onValueChange = onDescriptionChange,
-                placeholder = { Text("Describe your listing...", color = Color(0xFFBDBDBD)) },
+                placeholder = { Text("Describe your listing…", color = Color(0xFFBDBDBD)) },
                 minLines = 5,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
@@ -335,15 +473,25 @@ fun PostFormView(
                 disabledContainerColor = PrimaryColor.copy(alpha = 0.4f),
                 disabledContentColor = Color.White,
             ),
-            modifier = Modifier.fillMaxWidth().height(54.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
         ) {
-            Icon(imageVector = Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = Icons.Filled.Send,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Publish Listing", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = "Publish Listing",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 
-    // ── Image source sheet ────────────────────────────────────────────────────
+    // ── Image source bottom sheet ─────────────────────────────────────────────
     if (showImageSourceSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
@@ -365,8 +513,6 @@ fun PostFormView(
                     color = PrimaryColor,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
-
-                // Take photo — camera
                 Button(
                     onClick = {
                         showImageSourceSheet = false
@@ -374,12 +520,12 @@ fun PostFormView(
                     },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                 ) {
                     Text("Take Photo", fontWeight = FontWeight.SemiBold)
                 }
-
-                // Choose from library
                 Button(
                     onClick = {
                         showImageSourceSheet = false
@@ -390,11 +536,12 @@ fun PostFormView(
                         containerColor = Color(0xFFE5E5EA),
                         contentColor = Color.Black,
                     ),
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                 ) {
                     Text("Choose from Library", fontWeight = FontWeight.SemiBold)
                 }
-
                 TextButton(
                     onClick = { showImageSourceSheet = false },
                     modifier = Modifier.fillMaxWidth(),
@@ -406,7 +553,7 @@ fun PostFormView(
     }
 }
 
-// ── Form section ──────────────────────────────────────────────────────────────
+// ── FormSection ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun FormSection(
@@ -436,6 +583,8 @@ private fun FormSection(
     }
 }
 
+// ── SectionDivider ────────────────────────────────────────────────────────────
+
 @Composable
 private fun SectionDivider() {
     HorizontalDivider(
@@ -456,10 +605,14 @@ private fun PostFormViewPreview() {
             onCategorySelected = {},
             selectedCurrency = ListingCurrency.USD,
             onCurrencySelected = {},
+            selectedLocation = "",
+            onLocationSelected = {},
             productName = "",
             onProductNameChange = {},
             priceText = "",
             onPriceTextChange = {},
+            isNegotiable = false,
+            onNegotiableChange = {},
             description = "",
             onDescriptionChange = {},
             selectedImage = null,

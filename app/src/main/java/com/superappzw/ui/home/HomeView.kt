@@ -80,20 +80,8 @@ fun HomeView(
 
 // ── Load on first appearance ──────────────────────────────────────────────
 
-    val isFirstLoad = remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        billboardViewModel.load()
-        homeViewModel.loadFeaturedListings(province = selectedProvince)
-    }
-
-// ── Re-fetch when province changes ────────────────────────────────────────
-
     LaunchedEffect(selectedProvince) {
-        if (isFirstLoad.value) {
-            isFirstLoad.value = false
-            return@LaunchedEffect
-        }
+        billboardViewModel.load()
         homeViewModel.refreshListings(province = selectedProvince)
     }
 

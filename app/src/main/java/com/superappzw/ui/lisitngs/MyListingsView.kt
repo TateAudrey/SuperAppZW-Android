@@ -121,19 +121,23 @@ fun MyListingsView(
                     }
                     ListingTab.POST -> {
                         PostFormView(
-                            selectedCategory = viewModel.selectedCategory.collectAsState().value,
+                            selectedCategory   = viewModel.selectedCategory.collectAsState().value,
                             onCategorySelected = viewModel::onCategorySelected,
-                            selectedCurrency = viewModel.selectedCurrency.collectAsState().value,
+                            selectedCurrency   = viewModel.selectedCurrency.collectAsState().value,
                             onCurrencySelected = viewModel::onCurrencySelected,
-                            productName = viewModel.productName.collectAsState().value,
+                            selectedLocation   = viewModel.selectedLocation.collectAsState().value,
+                            onLocationSelected = viewModel::onLocationSelected,
+                            productName        = viewModel.productName.collectAsState().value,
                             onProductNameChange = viewModel::onProductNameChange,
-                            priceText = viewModel.priceText.collectAsState().value,
-                            onPriceTextChange = viewModel::onPriceTextChange,
-                            description = viewModel.description.collectAsState().value,
+                            priceText          = viewModel.priceText.collectAsState().value,
+                            onPriceTextChange  = viewModel::onPriceTextChange,
+                            isNegotiable       = viewModel.isNegotiable.collectAsState().value,
+                            onNegotiableChange = viewModel::onNegotiableChange,
+                            description        = viewModel.description.collectAsState().value,
                             onDescriptionChange = viewModel::onDescriptionChange,
-                            selectedImage = viewModel.selectedImage.collectAsState().value,
-                            onImageSelected = viewModel::onImageSelected,
-                            onPublish = viewModel::publishListing,
+                            selectedImage      = viewModel.selectedImage.collectAsState().value,
+                            onImageSelected    = viewModel::onImageSelected,
+                            onPublish          = viewModel::publishListing,
                         )
                     }
                 }
