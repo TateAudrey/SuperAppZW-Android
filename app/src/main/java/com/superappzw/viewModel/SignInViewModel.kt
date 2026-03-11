@@ -74,19 +74,18 @@ class SignInViewModel : ViewModel() {
                 isLoading = true
                 val credentialManager = CredentialManager.create(context)
 
-                // 1. Configure Google ID Option
-                val googleIdOption =
-                    GetCredentialRequest.Builder()
-                    .addCredentialOption(
-                        GetGoogleIdOption.Builder()
-                        .setFilterByAuthorizedAccounts(false) // Show all accounts
-                        .setServerClientId("229725757226-o33rrm3cchbkfvroo2rmm4bael9m840q.apps.googleusercontent.com")
-                        .build()
-                    )
+
+                val googleIdOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId("229725757226-o33rrm3cchbkfvroo2rmm4bael9m840q.apps.googleusercontent.com")
+                    .setAutoSelectEnabled(false)
                     .build()
 
-                // 2. Launch the selector
-                val result = credentialManager.getCredential(context, googleIdOption)
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                val result = credentialManager.getCredential(context, request)
                 val credential = result.credential
 
                 // 3. Extract ID Token and Sign into Firebase

@@ -19,9 +19,11 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,7 +45,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.superappzw.ui.account.packages.PackageHeaderCard
+import com.superappzw.ui.account.deleteAccount.DeleteAccountViewModel
+import com.superappzw.ui.account.packages.PackageStatusCard
+import com.superappzw.ui.account.packages.PackageStatusViewModel
 import com.superappzw.ui.components.utils.AppAlert
 import com.superappzw.ui.components.utils.AppAlertType
 import com.superappzw.ui.theme.PrimaryColor
@@ -54,9 +58,14 @@ import com.superappzw.ui.theme.SuperAppZWTheme
 fun AccountView(
     navController: NavController,
     viewModel: AccountViewModel = viewModel(),
+    deletionViewModel: DeleteAccountViewModel = viewModel(),
 ) {
-    val profile by viewModel.profile.collectAsState()
-    val alertType by viewModel.alertType.collectAsState()
+    val profile        by viewModel.profile.collectAsState()
+    val alertType      by viewModel.alertType.collectAsState()
+
+    val isDeleting     by deletionViewModel.isDeleting.collectAsState()
+    val requiresReauth by deletionViewModel.requiresReauth.collectAsState()
+    val deleteError    by deletionViewModel.errorMessage.collectAsState()
 
     // Mirrors .task { await viewModel.load() }
     LaunchedEffect(Unit) {
@@ -122,12 +131,7 @@ fun AccountView(
 
             // ── Active package ────────────────────────────────────────────────
             AccountSection(title = "ACTIVE PACKAGE") {
-                PackageHeaderCard(
-                    packageName = profile?.packageID
-                        ?.replaceFirstChar { it.uppercase() } ?: "Standard",
-                    validDays = "Expires in 7 days",
-                    modifier = Modifier.padding(12.dp),
-                )
+                PackageStatusCard(modifier = Modifier.padding(0.dp))
             }
 
             // ── My account ────────────────────────────────────────────────────
@@ -138,11 +142,11 @@ fun AccountView(
                     onClick = { navController.navigate("profileDetail") },
                 )
                 SectionDivider()
-                AccountNavRow(
-                    icon = Icons.Filled.Lightbulb,
-                    label = "Activate Premium",
-                    onClick = { /* TODO */ },
-                )
+//                AccountNavRow(
+//                    icon = Icons.Filled.Lightbulb,
+//                    label = "Activate Premium",
+//                    onClick = { /* TODO */ },
+//                )
                 SectionDivider()
                 AccountNavRow(
                     icon = Icons.Filled.Description,
@@ -186,26 +190,75 @@ fun AccountView(
                 onClick = {
                     viewModel.setAlertType(
                         AppAlertType.DeleteAccount(
-                           // deleteAction = { viewModel.deleteAccount() }
+                            deleteAction = { deletionViewModel.deleteAccount() }
                         )
                     )
                 },
+                enabled = !isDeleting,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text = "Delete Account",
-                    fontSize = 14.sp,
-                    color = Color(0xFFBDBDBD),
-                )
+                if (isDeleting) {
+                    Text(
+                        text = "Deleting account...",
+                        fontSize = 14.sp,
+                        color = Color(0xFFBDBDBD),
+                    )
+                } else {
+                    Text(
+                        text = "Delete Account",
+                        fontSize = 14.sp,
+                        color = Color(0xFFBDBDBD),
+                    )
+                }
             }
         }
     }
 
-    // Rendered outside Scaffold so it floats above all content
+    // ── General alert (sign out / delete confirm) — floats above Scaffold ─────
     AppAlert(
         alertType = alertType,
         onDismiss = viewModel::dismissAlert,
     )
+
+    // ── Re-auth required alert ────────────────────────────────────────────────
+    // Mirrors Swift: .alert("Please Sign In Again", isPresented: $deletionViewModel.requiresReauth)
+    if (requiresReauth) {
+        AlertDialog(
+            onDismissRequest = { deletionViewModel.dismissReauth() },
+            title = { Text("Please Sign In Again", style = MaterialTheme.typography.headlineSmall) },
+            text = {
+                Text(
+                    "For security, please sign out and sign back in before deleting your account.",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.signOut() }) {
+                    Text("Sign Out & Try Again", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletionViewModel.dismissReauth() }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    // ── Delete error alert ────────────────────────────────────────────────────
+    // Mirrors Swift: .alert("Error", isPresented: Binding { deletionViewModel.errorMessage != nil })
+    if (deleteError != null) {
+        AlertDialog(
+            onDismissRequest = { deletionViewModel.dismissError() },
+            title = { Text("Error", style = MaterialTheme.typography.headlineSmall) },
+            text = { Text(deleteError ?: "", style = MaterialTheme.typography.bodyLarge) },
+            confirmButton = {
+                TextButton(onClick = { deletionViewModel.dismissError() }) {
+                    Text("OK")
+                }
+            },
+        )
+    }
 }
 
 // ── Account section ───────────────────────────────────────────────────────────
@@ -216,9 +269,7 @@ private fun AccountSection(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         if (title != null) {
             Text(
                 text = title,
