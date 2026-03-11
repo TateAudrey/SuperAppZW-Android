@@ -32,6 +32,7 @@ import com.superappzw.ui.home.HomeView
 import com.superappzw.ui.lisitngs.MyListingsView
 import com.superappzw.ui.store.StoreListingDetailView
 import com.superappzw.ui.store.StoreProfileView
+import com.superappzw.ui.theme.IOSSystemBackground
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 
@@ -49,7 +50,9 @@ fun MainTabView(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = IOSSystemBackground
+            ) {
                 MainTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = selectedTab == tab,
