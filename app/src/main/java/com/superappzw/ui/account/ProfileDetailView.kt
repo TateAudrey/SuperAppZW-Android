@@ -25,6 +25,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -67,6 +68,7 @@ fun ProfileDetailView(
     val suburb by viewModel.suburb.collectAsState()
     val location by viewModel.location.collectAsState()
     val phoneNumber by viewModel.phoneNumber.collectAsState()
+    val emailAddress by viewModel.emailAddress.collectAsState()
     val virtualShopName by viewModel.virtualShopName.collectAsState()
     val profileImageURL by viewModel.profileImageURL.collectAsState()
     val isUploadingImage by viewModel.isUploadingImage.collectAsState()
@@ -189,6 +191,10 @@ fun ProfileDetailView(
                     onValueChange = viewModel::onPhoneNumberChange,
                     placeholder = "Phone Number",
                     keyboardType = KeyboardType.Phone,
+                )
+                SectionDivider()
+                EmailTextField(
+                    value = emailAddress
                 )
             }
 
@@ -407,6 +413,40 @@ private fun ProfileTextField(
             unfocusedContainerColor = Color.White,
         ),
         modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun EmailTextField(
+    value: String,
+    placeholder: String = ""
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        readOnly = true,
+        placeholder = {
+            Text(
+                text = placeholder,
+                color = Color(0xFFBDBDBD)
+            )
+        },
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Email
+        ),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color.Transparent,
+            unfocusedBorderColor = Color.Transparent,
+            disabledBorderColor = Color.Transparent,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            disabledContainerColor = Color.White,
+
+            //make the text gray
+            focusedTextColor = Color.Gray,
+            unfocusedTextColor = Color.Gray
+        ),
+        modifier = Modifier.fillMaxWidth()
     )
 }
 

@@ -29,6 +29,10 @@ class ProfileDetailViewModel : ViewModel() {
     private val _phoneNumber = MutableStateFlow("")
     val phoneNumber: StateFlow<String> = _phoneNumber.asStateFlow()
 
+    private val _emailAddress = MutableStateFlow("")
+    val emailAddress: StateFlow<String> = _emailAddress.asStateFlow()
+
+
     private val _virtualShopName = MutableStateFlow("")
     val virtualShopName: StateFlow<String> = _virtualShopName.asStateFlow()
 
@@ -89,6 +93,7 @@ class ProfileDetailViewModel : ViewModel() {
     fun onSuburbChange(value: String) { _suburb.value = value }
     fun onLocationChange(value: String) { _location.value = value }
     fun onPhoneNumberChange(value: String) { _phoneNumber.value = value }
+    fun onEmailAddressChange(value: String) { _phoneNumber.value = value }
     fun onVirtualShopNameChange(value: String) { _virtualShopName.value = value }
     fun setShowImageSourceSheet(show: Boolean) { _showImageSourceSheet.value = show }
 
@@ -107,6 +112,7 @@ class ProfileDetailViewModel : ViewModel() {
                 _suburb.value = profile.suburb
                 _location.value = profile.location
                 _phoneNumber.value = profile.phoneNumber
+                _emailAddress.value = profile.emailAddress
                 _virtualShopName.value = profile.virtualShopName
                 _profileImageURL.value = profile.profileImageURL
                 hasLoaded = true        // mark loaded so returning from picker doesn't re-fetch
