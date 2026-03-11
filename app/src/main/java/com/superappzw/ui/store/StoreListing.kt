@@ -1,6 +1,5 @@
 package com.superappzw.ui.store
 
-
 data class StoreListing(
     val id: String = java.util.UUID.randomUUID().toString(),
     val title: String,
@@ -11,7 +10,21 @@ data class StoreListing(
     val imageURL: String?,
     val viewCount: Int,
     val ownerUserID: String,
+    val location: String = "",
+    val isNegotiable: Boolean = false,
 ) {
+    // Convenience — mirrors Swift's displayPrice computed property
+    val displayPrice: String
+        get() = if (isNegotiable) "Negotiable" else formatPrice()
+
+    private fun formatPrice(): String {
+        return if (price % 1.0 == 0.0) {
+            "$currency ${price.toInt()}"
+        } else {
+            "$currency ${"%.2f".format(price)}"
+        }
+    }
+
     // Equality and hash based on itemCode — mirrors Swift's Hashable conformance
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
