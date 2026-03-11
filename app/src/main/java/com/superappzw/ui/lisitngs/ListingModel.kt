@@ -8,4 +8,5 @@ data class ListingModel(
     val itemCode: String,
     val imageURL: String?,
     val viewCount: Int,
+    val ownerUserID: String,
 )

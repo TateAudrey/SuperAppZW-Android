@@ -23,10 +23,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.model.DailyLanguageModel
+import com.superappzw.ui.account.AccountView
+import com.superappzw.ui.account.ProfileDetailView
+import com.superappzw.ui.categories.CategoryDetailView
+import com.superappzw.ui.categories.CategoryItem
 import com.superappzw.ui.favourites.FavouritesView
-import com.superappzw.ui.lisitngs.MyListingsView
 import com.superappzw.ui.home.HomeView
-import com.superappzw.ui.store.StoreListing
+import com.superappzw.ui.lisitngs.MyListingsView
 import com.superappzw.ui.store.StoreListingDetailView
 import com.superappzw.ui.store.StoreProfileView
 import com.superappzw.ui.theme.PrimaryColor
@@ -41,9 +44,6 @@ fun MainTabView(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
-
-    // Inner NavController handles screen-level pushes (e.g. listing detail)
-    // while selectedTab handles bottom nav tab switching independently.
     val navController = rememberNavController()
 
     Scaffold(
@@ -83,16 +83,17 @@ fun MainTabView(
                         dailyLanguage = dailyLanguage,
                         currentUserName = currentUserName,
                         currentUserPhotoUrl = currentUserPhotoUrl,
+                        onProfileTap = { navController.navigate("account") },
                         onCategorySelect = { category ->
-                            // TODO: navController.navigate("categoryDetail/${category.name}")
+                            // Pass index so CategoryItem can be reconstructed on the other side
+                            val index = CategoryItem.all.indexOf(category)
+                            if (index >= 0) navController.navigate("categoryDetail/$index")
                         },
                         onListingTap = { itemCode, ownerUserID ->
                             val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
                             if (ownerUserID == currentUserID) {
-                                // Owner tapped their own listing — switch to My Listings tab
                                 selectedTab = MainTab.MY_LISTINGS
                             } else {
-                                // Other user's listing — navigate to their full store profile
                                 navController.navigate("storeProfile/$ownerUserID")
                             }
                         },
@@ -100,10 +101,48 @@ fun MainTabView(
                     )
                     MainTab.MY_LISTINGS -> MyListingsView(
                         navController = navController,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.FAVOURITES -> FavouritesView(modifier = Modifier.fillMaxSize())
                 }
+            }
+
+            // ── Category detail ───────────────────────────────────────────────
+            composable(
+                route = "categoryDetail/{categoryIndex}",
+                arguments = listOf(
+                    navArgument("categoryIndex") { type = NavType.IntType },
+                ),
+            ) { backStackEntry ->
+                val index = backStackEntry.arguments?.getInt("categoryIndex") ?: return@composable
+                val category = CategoryItem.all.getOrNull(index) ?: return@composable
+                CategoryDetailView(
+                    category = category,
+                    onListingTap = { itemCode, ownerUserID ->
+                        val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
+                        if (ownerUserID == currentUserID) {
+                            // Own listing — pop back to tabs and switch to My Listings
+                            navController.popBackStack("tabs", inclusive = false)
+                            selectedTab = MainTab.MY_LISTINGS
+                        } else {
+                            // Another user's listing — go to their store profile
+                            navController.navigate("storeProfile/$ownerUserID")
+                        }
+                    },
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+
+            // ── Account ───────────────────────────────────────────────────────
+            composable("account") {
+                AccountView(navController = navController)
+            }
+
+            // ── Profile detail ────────────────────────────────────────────────
+            composable("profileDetail") {
+                ProfileDetailView(
+                    onDismiss = { navController.popBackStack() },
+                )
             }
 
             // ── Store profile ─────────────────────────────────────────────────
@@ -115,11 +154,9 @@ fun MainTabView(
             ) { backStackEntry ->
                 val ownerUserID = backStackEntry.arguments?.getString("ownerUserID")
                     ?: return@composable
-
                 StoreProfileView(
                     storeID = ownerUserID,
                     onNavigateToListing = { listing ->
-                        // User tapped a product card inside a store — go to listing detail
                         navController.navigate("listingDetail/${listing.itemCode}/${listing.ownerUserID}")
                     },
                 )
@@ -135,7 +172,6 @@ fun MainTabView(
             ) { backStackEntry ->
                 val itemCode = backStackEntry.arguments?.getString("itemCode") ?: return@composable
                 val ownerUserID = backStackEntry.arguments?.getString("ownerUserID") ?: return@composable
-
                 StoreListingDetailView(
                     itemCode = itemCode,
                     ownerUserID = ownerUserID,
@@ -145,7 +181,7 @@ fun MainTabView(
     }
 }
 
-// ── Previews ──────────────────────────────────────────────────────────────────
+// ── Preview ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

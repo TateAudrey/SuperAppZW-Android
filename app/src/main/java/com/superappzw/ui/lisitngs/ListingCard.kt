@@ -51,6 +51,7 @@ private fun ListingCardPreview() {
                 itemCode = "IPH15PM-XYZ123",
                 imageURL = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300",
                 viewCount = 247,
+                ownerUserID = "user123",
             ),
             isFavourited = true,
             modifier = Modifier.padding(16.dp),

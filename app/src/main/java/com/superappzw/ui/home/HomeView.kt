@@ -1,17 +1,17 @@
 package com.superappzw.ui.home
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -40,7 +40,6 @@ fun HomeView(
     dailyLanguage: DailyLanguageModel? = null,
     onProfileTap: (() -> Unit)? = null,
     onCategorySelect: ((CategoryItem) -> Unit)? = null,
-    // itemCode + ownerUserID passed up — MainTabView decides where to navigate
     onListingTap: ((itemCode: String, ownerUserID: String) -> Unit)? = null,
     provinceViewModel: ProvinceViewModel = viewModel(),
     billboardViewModel: BillboardViewModel = viewModel(),
@@ -71,11 +70,21 @@ fun HomeView(
         }
     }
 
+    // ── Observe selected province ─────────────────────────────────────────────
+
+    val selectedProvince by provinceViewModel.selectedProvince.collectAsState()
+
     // ── Load on first appearance ──────────────────────────────────────────────
 
     LaunchedEffect(Unit) {
         billboardViewModel.load()
-        homeViewModel.loadFeaturedListings()
+        homeViewModel.loadFeaturedListings(province = selectedProvince)
+    }
+
+    // ── Re-fetch when province changes ────────────────────────────────────────
+
+    LaunchedEffect(selectedProvince) {
+        homeViewModel.refreshListings(province = selectedProvince)
     }
 
     SuperAppZWTheme {
@@ -133,10 +142,11 @@ fun HomeView(
             ListingsSectionView(
                 viewModel = homeViewModel,
                 onTap = { itemCode, ownerUserID ->
-                    // Pass up to MainTabView which owns the nav decision
                     onListingTap?.invoke(itemCode, ownerUserID)
                 },
-                onRefresh = { homeViewModel.refreshListings() },
+                onRefresh = {
+                    homeViewModel.refreshListings(province = selectedProvince)
+                },
             )
 
             Spacer(modifier = Modifier.height(32.dp))

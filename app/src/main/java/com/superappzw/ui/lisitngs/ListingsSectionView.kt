@@ -117,6 +117,7 @@ fun ListingsSectionView(
                                         itemCode = listing.itemCode,
                                         imageURL = listing.imageURL,
                                         viewCount = listing.viewCount,
+                                        ownerUserID = listing.ownerUserID
                                     ),
                                     onTap = { onTap(listing.itemCode, listing.ownerUserID) },
                                 )
