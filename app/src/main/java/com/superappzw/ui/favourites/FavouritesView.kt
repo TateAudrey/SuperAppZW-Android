@@ -63,10 +63,9 @@ fun FavouritesView(
     val listings  by viewModel.listings.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    println("FavouritesView: recomposing — listings=${listings.size} isLoading=$isLoading vm=${viewModel.hashCode()}")
+
 
     LaunchedEffect(Unit) {
-        println("FavouritesView: LaunchedEffect firing — vm=${viewModel.hashCode()}")
         viewModel.load()
     }
 
@@ -201,7 +200,7 @@ private fun FavouriteRow(
     ) {
         if (listing.imageURL != null) {
             AsyncImage(
-                model = listing.imageURL.toString(),
+                model = listing.imageURL,
                 contentDescription = listing.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

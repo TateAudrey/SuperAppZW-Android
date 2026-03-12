@@ -11,7 +11,6 @@ import kotlinx.coroutines.launch
 
 
 class FavouritesViewModel : ViewModel() {
-
     private val service = FavouritesService.shared
 
     private val _listings = MutableStateFlow<List<StoreListing>>(emptyList())
@@ -29,9 +28,7 @@ class FavouritesViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 val result = service.fetchAll()
-                println("FavouritesViewModel: fetched ${result.size} listings — vm=${this@FavouritesViewModel.hashCode()}")
                 _listings.value = result
-                println("FavouritesViewModel: _listings updated — vm=${this@FavouritesViewModel.hashCode()} size=${_listings.value.size}")
                 _errorMessage.value = null
             } catch (e: Exception) {
                 println("FavouritesViewModel: EXCEPTION — ${e.message}")
