@@ -177,6 +177,24 @@ class ListingService {
         return data["myServices"] as? List<String> ?: emptyList()
     }
 
+    // ── Fetch single listing ──────────────────────────────────────────────────────
+
+    suspend fun fetchListing(itemCode: String, ownerUserID: String): StoreListing {
+        val snapshot = db.collection("listings").document(ownerUserID).get().await()
+        val data = snapshot.data
+            ?: throw ListingError.NotFound("No listings document found for user $ownerUserID.")
+
+        @Suppress("UNCHECKED_CAST")
+        val myListings = data["myListings"] as? List<Map<String, Any>>
+            ?: throw ListingError.NotFound("myListings field is missing.")
+
+        val listingData = myListings.firstOrNull { it["itemCode"] as? String == itemCode }
+            ?: throw ListingError.NotFound("No listing found with itemCode '$itemCode'.")
+
+        return listingData.toStoreListing(ownerUserID = ownerUserID)
+            ?: throw ListingError.InvalidData("Listing data is incomplete for itemCode '$itemCode'.")
+    }
+
     // ── Add service listing ───────────────────────────────────────────────────
 
     suspend fun addServiceListing(service: String) {

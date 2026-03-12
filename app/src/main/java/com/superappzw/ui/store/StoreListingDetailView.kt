@@ -31,9 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,11 +58,11 @@ fun StoreListingDetailView(
     modifier: Modifier = Modifier,
     viewModel: StoreListingDetailViewModel = viewModel(),
 ) {
-    val listing by viewModel.listing.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val listing      by viewModel.listing.collectAsState()
+    val isLoading    by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val isFavourited by viewModel.isFavourited.collectAsState()
 
-    // Fetch real listing data on first composition
     LaunchedEffect(itemCode, ownerUserID) {
         viewModel.load(itemCode = itemCode, ownerUserID = ownerUserID)
     }
@@ -73,33 +71,23 @@ fun StoreListingDetailView(
         isLoading -> {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFF2F2F7)),
-            ) {
-                CircularProgressIndicator(color = PrimaryColor)
-            }
+                modifier = modifier.fillMaxSize().background(Color(0xFFF2F2F7)),
+            ) { CircularProgressIndicator(color = PrimaryColor) }
         }
-
         errorMessage != null -> {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFF2F2F7)),
+                modifier = modifier.fillMaxSize().background(Color(0xFFF2F2F7)),
             ) {
-                Text(
-                    text = errorMessage ?: "Something went wrong.",
-                    color = Color.Gray,
-                    fontSize = 15.sp,
-                )
+                Text(text = errorMessage ?: "Something went wrong.", color = Color.Gray, fontSize = 15.sp)
             }
         }
-
         listing != null -> {
             StoreListingDetailContent(
-                listing = listing!!,
-                modifier = modifier,
+                listing      = listing!!,
+                isFavourited = isFavourited,
+                onFavouriteToggle = { viewModel.toggleFavourite() },
+                modifier     = modifier,
             )
         }
     }
@@ -110,24 +98,21 @@ fun StoreListingDetailView(
 @Composable
 private fun StoreListingDetailContent(
     listing: StoreListing,
+    isFavourited: Boolean,
+    onFavouriteToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var isFavourited by remember { mutableStateOf(false) }
     val listingService = remember { ListingService() }
 
     val heartTint by animateColorAsState(
         targetValue = if (isFavourited) Color.Red else Color.White,
-        animationSpec = spring(
-            dampingRatio = 0.6f,
-            stiffness = Spring.StiffnessMedium,
-        ),
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
         label = "heartTint",
     )
 
-    // Record view once — fire-and-forget, mirrors Swift's .task { }
     LaunchedEffect(listing.itemCode) {
         listingService.recordView(
-            itemCode = listing.itemCode,
+            itemCode    = listing.itemCode,
             ownerUserID = listing.ownerUserID,
         )
     }
@@ -191,9 +176,8 @@ private fun StoreListingDetailContent(
                 )
             }
 
-            // Favourite button — top trailing
             IconButton(
-                onClick = { isFavourited = !isFavourited },
+                onClick = onFavouriteToggle,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 12.dp, end = 12.dp)
@@ -310,5 +294,7 @@ private fun StoreListingDetailPreview() {
             viewCount = 1527,
             ownerUserID = "UT0mHxc1IJcuRsibi3srlMbISZI2",
         ),
+        isFavourited = false,
+        onFavouriteToggle = {}
     )
 }

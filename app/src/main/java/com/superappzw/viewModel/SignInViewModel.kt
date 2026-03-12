@@ -1,12 +1,15 @@
 package com.superappzw.viewModel
 
+import android.app.Activity
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.view.DragAndDropPermissionsCompat.request
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -14,6 +17,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.superappzw.ui.components.utils.AppAlertType
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.superappzw.R
 import com.superappzw.services.FirebaseErrorMapper
 import com.superappzw.services.UserService
 import kotlinx.coroutines.launch
@@ -72,60 +76,66 @@ class SignInViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 isLoading = true
-                val credentialManager = CredentialManager.create(context)
 
+                val activity = context as Activity
+                val credentialManager = CredentialManager.create(activity)
 
                 val googleIdOption = GetGoogleIdOption.Builder()
+                    .setServerClientId(context.getString(R.string.default_web_client_id))
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId("229725757226-o33rrm3cchbkfvroo2rmm4bael9m840q.apps.googleusercontent.com")
-                    .setAutoSelectEnabled(false)
                     .build()
 
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(googleIdOption)
+                    .addCredentialOption(googleIdOption)
                     .build()
 
-                val result = credentialManager.getCredential(context, request)
-                val credential = result.credential
+                val result = credentialManager.getCredential(activity, request)
+                handleGoogleCredential(result.credential, onResult)
 
-                // 3. Extract ID Token and Sign into Firebase
-                if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                    val googleIdTokenCredential =
-                        GoogleIdTokenCredential.createFrom(credential.data)
-                    val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
-
-                    val authResult = auth.signInWithCredential(firebaseCredential).await()
-                    val user = authResult.user
-
-                    // 4. If this is a NEW user, create their document in Firestore
-                    if (authResult.additionalUserInfo?.isNewUser == true && user != null) {
-                        // Split display name if available, otherwise use email part
-                        val displayName = user.displayName ?: ""
-                        val names = displayName.split(" ")
-                        val firstName = names.getOrNull(0) ?: user.email?.split("@")?.getOrNull(0) ?: "User"
-                        val lastName = names.getOrNull(1) ?: ""
-
-                        UserService.getInstance().createUserDocument(
-                            uid = user.uid,
-                            firstName = firstName,
-                            lastName = lastName,
-                            email = user.email ?: ""
-                        )
-                    }
-
-                    onResult(true)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                val errorMessage = FirebaseErrorMapper.mapError(e)
+            } catch (e: NoCredentialException) {
                 alertType = AppAlertType.Info(
-                    title = "Google Sign In Failed",
-                    message = errorMessage
+                    title = "No Google Account",
+                    message = "Add a Google account in device settings then try again."
                 )
                 onResult(false)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                alertType = AppAlertType.Info(
+                    title = "Google Sign In Failed",
+                    message = FirebaseErrorMapper.mapError(e)
+                )
+                onResult(false)
+
             } finally {
                 isLoading = false
             }
+        }
+    }
+
+    private suspend fun handleGoogleCredential(credential: androidx.credentials.Credential, onResult: (Boolean) -> Unit) {
+        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
+            val authResult = auth.signInWithCredential(firebaseCredential).await()
+            val user = authResult.user
+
+            if (authResult.additionalUserInfo?.isNewUser == true && user != null) {
+                val displayName = user.displayName ?: ""
+                val names = displayName.split(" ")
+                val firstName = names.getOrNull(0) ?: user.email?.split("@")?.getOrNull(0) ?: "User"
+                val lastName = names.getOrNull(1) ?: ""
+                UserService.getInstance().createUserDocument(
+                    uid = user.uid,
+                    firstName = firstName,
+                    lastName = lastName,
+                    email = user.email ?: "",
+                )
+            }
+            onResult(true)
+        } else {
+            onResult(false)
         }
     }
 }

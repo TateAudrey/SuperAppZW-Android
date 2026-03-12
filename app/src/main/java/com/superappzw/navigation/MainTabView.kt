@@ -127,7 +127,11 @@ fun MainTabView(
                         viewModel = viewModel(tabsEntry),  // ← add this
                         modifier = Modifier.fillMaxSize(),
                     )
-                    MainTab.FAVOURITES -> FavouritesView(modifier = Modifier.fillMaxSize())
+                    MainTab.FAVOURITES -> FavouritesView(
+                        navController = navController,
+                        viewModel = viewModel(tabsEntry), // ← add this
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
             }
 

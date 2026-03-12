@@ -16,6 +16,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.superappzw.navigation.AppNavigation
 import com.superappzw.navigation.AuthStateManager
+import com.superappzw.services.NetworkMonitor
 import com.superappzw.ui.onboarding.OnboardingScreen
 import com.superappzw.ui.theme.SuperAppZWTheme
 
@@ -23,8 +24,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Firebase already auto-initializes with google-services.json
-        // Remove manual FirebaseApp.initializeApp(this) - not needed!
+        NetworkMonitor.getInstance(this)
+
+
 
         setContent {
             SuperAppZWTheme {

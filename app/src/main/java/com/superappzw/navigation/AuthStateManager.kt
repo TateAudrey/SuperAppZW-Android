@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.services.AppTermsService
 import com.superappzw.services.DailyLanguageService
+import com.superappzw.services.NetworkMonitor
 import com.superappzw.services.UserService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,9 @@ class AuthStateManager(private val application: Application) : AndroidViewModel(
     private val auth = FirebaseAuth.getInstance()
     private val languageService = DailyLanguageService()
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
+
+    val networkMonitor: NetworkMonitor
+        get() = NetworkMonitor.getInstance(application)
 
     init {
         checkAuthState()

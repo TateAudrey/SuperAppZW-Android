@@ -1,10 +1,12 @@
 package com.superappzw.navigation
 
+import androidx.compose.material3.Text
 import com.superappzw.ui.accountStatus.PreLoadView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,6 +31,10 @@ fun AppNavigation(
     val authState  by authStateManager.authState.collectAsState()
     val gateStatus by authStateManager.gateStatus.collectAsState()
 
+    // ── Network alert state ───────────────────────────────────────────────────
+    val networkMonitor      = remember { authStateManager.networkMonitor }
+    val showNoInternetAlert by networkMonitor.showNoConnectionAlert.collectAsState()
+
     // ── Auth-level navigation ─────────────────────────────────────────────────
     // Mirrors RootView's .onChange(of: appSession.isAuthenticated)
     LaunchedEffect(authState) {
@@ -45,6 +51,22 @@ fun AppNavigation(
             }
             is AuthState.Loading -> Unit
         }
+    }
+
+    // ── No internet alert — mirrors Swift's .alert("No Internet Connection") ──
+    if (showNoInternetAlert) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { networkMonitor.dismissAlert() },
+            title = { Text("No Internet Connection") },
+            text  = { Text("Please check your connection and try again.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = { networkMonitor.dismissAlert() },
+                ) {
+                    Text("OK")
+                }
+            },
+        )
     }
 
     NavHost(
