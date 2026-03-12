@@ -36,7 +36,7 @@ class TermsService private constructor() {
         db.collection("users").document(uid).update(
             mapOf(
                 "terms_accepted_at"      to FieldValue.serverTimestamp(),
-                "terms_accepted_version" to CURRENT_VERSION,
+                "terms_accepted_version" to CURRENT_VERSION,  // ← already a String const, this is fine
                 "did_accept_terms"       to true,
             )
         ).await()

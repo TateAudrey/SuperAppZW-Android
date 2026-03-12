@@ -34,42 +34,37 @@ class AppTermsService private constructor() {
 
     suspend fun checkGateStatus(context: android.content.Context): GateStatus {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return GateStatus.CLEAR
-
         return try {
             coroutineScope {
-                // Mirrors Swift's async let parallel fetch
                 val configDeferred = async {
                     db.collection("app_config").document("config").get().await()
                 }
                 val userDeferred = async {
                     db.collection("users").document(uid).get().await()
                 }
-
                 val configData = configDeferred.await().data ?: emptyMap()
                 val userData   = userDeferred.await().data   ?: emptyMap()
 
-                // 1. Force update
-                val minVersion = configData["minimum_version"] as? String ?: "1.0.0"
-                if (isVersionLessThan(currentAppVersion(context), minVersion)) {
-                    return@coroutineScope GateStatus.FORCE_UPDATE
-                }
+                val requiredTerms = configData["terms_version"] as? String ?: TermsService.CURRENT_VERSION
+                val acceptedTerms = (userData["terms_accepted_version"] as? String)
+                    ?: (userData["terms_accepted_version"] as? Long)?.toString()
+                    ?: (userData["terms_accepted_version"] as? Int)?.toString()
+                    ?: "0"
 
-                // 2. Account status
+                // ← Add these two lines
+                println("AppTermsService: required=$requiredTerms accepted=$acceptedTerms uid=$uid")
+                println("AppTermsService: full userData keys=${userData.keys}")
+
+                val minVersion = configData["minimum_version"] as? String ?: "1.0.0"
+                if (isVersionLessThan(currentAppVersion(context), minVersion)) return@coroutineScope GateStatus.FORCE_UPDATE
                 val status = userData["account_status"] as? String ?: "active"
                 if (status == "banned")    return@coroutineScope GateStatus.BANNED
                 if (status == "suspended") return@coroutineScope GateStatus.SUSPENDED
-
-                // 3. Terms version
-                val requiredTerms = configData["terms_version"] as? String ?: TermsService.CURRENT_VERSION
-                val acceptedTerms = userData["terms_accepted_version"] as? String ?: "0"
-                if (acceptedTerms != requiredTerms) {
-                    return@coroutineScope GateStatus.UPDATED_TERMS
-                }
-
+                if (acceptedTerms != requiredTerms) return@coroutineScope GateStatus.UPDATED_TERMS
                 GateStatus.CLEAR
             }
         } catch (e: Exception) {
-            println("AppTermsService: gate check failed — ${e.message}")
+            println("AppTermsService: FAILED — ${e.message}")
             GateStatus.CLEAR
         }
     }
