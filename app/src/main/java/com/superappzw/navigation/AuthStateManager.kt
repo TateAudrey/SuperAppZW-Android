@@ -1,9 +1,11 @@
 package com.superappzw.navigation
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.model.DailyLanguageModel
+import com.superappzw.services.AppTermsService
 import com.superappzw.services.DailyLanguageService
 import com.superappzw.services.UserService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,11 +13,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-
-class AuthStateManager : ViewModel() {
+class AuthStateManager(private val application: Application) : AndroidViewModel(application) {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    // null  = gate check not yet run (shows PreLoadView)
+    // non-null = gate check complete (shows the appropriate screen)
+    private val _gateStatus = MutableStateFlow<AppTermsService.GateStatus?>(null)
+    val gateStatus: StateFlow<AppTermsService.GateStatus?> = _gateStatus.asStateFlow()
 
     private val _dailyLanguage = MutableStateFlow<DailyLanguageModel?>(null)
     val dailyLanguage: StateFlow<DailyLanguageModel?> = _dailyLanguage.asStateFlow()
@@ -23,7 +29,6 @@ class AuthStateManager : ViewModel() {
     private val _dailyLanguageError = MutableStateFlow<String?>(null)
     val dailyLanguageError: StateFlow<String?> = _dailyLanguageError.asStateFlow()
 
-    // ── Current user ──────────────────────────────────────────────────────────
     private val _currentUserName = MutableStateFlow<String?>(null)
     val currentUserName: StateFlow<String?> = _currentUserName.asStateFlow()
 
@@ -46,10 +51,12 @@ class AuthStateManager : ViewModel() {
                 _currentUserPhotoUrl.value = user.photoUrl?.toString()
                 viewModelScope.launch {
                     fetchDailyLanguage()
-                    fetchUserName(user.uid) // ← fetch from Firestore
+                    fetchUserName(user.uid)
+                    checkGate() // ← run gate immediately on auth
                 }
             } else {
                 _authState.value = AuthState.Unauthenticated
+                _gateStatus.value = null // reset on sign-out
                 _currentUserName.value = null
                 _currentUserPhotoUrl.value = null
                 _dailyLanguage.value = null
@@ -58,16 +65,21 @@ class AuthStateManager : ViewModel() {
         auth.addAuthStateListener(authStateListener!!)
     }
 
+    // Called after UpdatedTermsView acknowledges, and on sign-in
+    fun checkGate() {
+        viewModelScope.launch {
+            _gateStatus.value = AppTermsService.shared.checkGateStatus(application)
+        }
+    }
+
     private suspend fun fetchUserName(uid: String) {
         try {
             val profile = UserService.getInstance().fetchProfile(uid)
             _currentUserName.value = profile.firstName.ifBlank { null }
-            // Also update photo URL from Firestore in case it differs from Auth
             if (profile.profileImageURL != null) {
                 _currentUserPhotoUrl.value = profile.profileImageURL
             }
         } catch (e: Exception) {
-            // Fall back to Firebase Auth displayName if Firestore fetch fails
             _currentUserName.value = FirebaseAuth.getInstance().currentUser?.displayName
         }
     }
@@ -89,7 +101,6 @@ class AuthStateManager : ViewModel() {
         authStateListener?.let { auth.removeAuthStateListener(it) }
     }
 }
-
 
 sealed class AuthState {
     object Loading : AuthState()

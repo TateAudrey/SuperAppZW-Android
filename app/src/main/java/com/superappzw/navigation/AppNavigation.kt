@@ -1,5 +1,6 @@
 package com.superappzw.navigation
 
+import com.superappzw.ui.accountStatus.PreLoadView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -8,6 +9,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.superappzw.services.AppTermsService.GateStatus
+import com.superappzw.ui.accountStatus.BannedAccountView
+import com.superappzw.ui.accountStatus.ForceUpdateView
+import com.superappzw.ui.accountStatus.SuspendedAccountView
+import com.superappzw.ui.accountStatus.UpdatedTermsView
 import com.superappzw.ui.components.utils.LoadingView
 import com.superappzw.ui.onboarding.GetStartedScreen
 import com.superappzw.ui.onboarding.OnboardingScreen
@@ -17,16 +23,18 @@ import com.superappzw.ui.screens.SignUpView
 
 @Composable
 fun AppNavigation(
-    authStateManager: AuthStateManager = viewModel()  // or hiltViewModel()
+    authStateManager: AuthStateManager = viewModel()
 ) {
     val navController = rememberNavController()
-    val authState by authStateManager.authState.collectAsState()
+    val authState  by authStateManager.authState.collectAsState()
+    val gateStatus by authStateManager.gateStatus.collectAsState()
 
-    // Auto-navigate based on auth state
+    // ── Auth-level navigation ─────────────────────────────────────────────────
+    // Mirrors RootView's .onChange(of: appSession.isAuthenticated)
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                navController.navigate("home") {
+                navController.navigate("authenticated") {
                     popUpTo(0) { inclusive = true }
                 }
             }
@@ -35,70 +43,91 @@ fun AppNavigation(
                     popUpTo(0) { inclusive = true }
                 }
             }
-            is AuthState.Loading -> {
-                // Do nothing - stay on loading
-            }
+            is AuthState.Loading -> Unit
         }
     }
 
     NavHost(
         navController = navController,
-        startDestination = "loading"
+        startDestination = "loading",
     ) {
+
+        // ── Initial loading splash ────────────────────────────────────────────
         composable("loading") {
             LoadingView()
         }
 
-        // UNAUTHENTICATED screens
+        // ── Unauthenticated screens ───────────────────────────────────────────
         composable("onboarding") {
             OnboardingScreen(
-                onGetStartedClick = { navController.navigate("getStarted") }
+                onGetStartedClick = { navController.navigate("getStarted") },
             )
         }
 
         composable("getStarted") {
             GetStartedScreen(
                 navigateToEmail = { navController.navigate("signup") },
-                navigateToGoogle = { /* Google sign-in is handled internally by GetStartedScreen */ },
+                navigateToGoogle = {},
                 navigateBack = { navController.popBackStack() },
-                onSignInSuccess = {
-                    // AuthStateManager will trigger navigation via LaunchedEffect above
-                }
+                onSignInSuccess = {},
             )
         }
 
         composable("signup") {
             SignUpView(
                 onSignInClick = { navController.navigate("signIn") },
-                navigateBack = { navController.popBackStack() }
+                navigateBack = { navController.popBackStack() },
             )
         }
 
         composable("signIn") {
             SignInView(
                 onResetClick = { navController.navigate("reset") },
-                navigateBack = { navController.popBackStack() }
+                navigateBack = { navController.popBackStack() },
             )
         }
 
         composable("reset") {
             ForgotPasswordView(
-                navigateBack = { navController.popBackStack() }
+                navigateBack = { navController.popBackStack() },
             )
         }
 
-        // AUTHENTICATED screens
-        composable("home") {
-            val dailyLanguage by authStateManager.dailyLanguage.collectAsState()
-            val currentUserName by authStateManager.currentUserName.collectAsState()
-            val currentUserPhotoUrl by authStateManager.currentUserPhotoUrl.collectAsState()
+        // ── Authenticated root — gate switch ──────────────────────────────────
+        // Mirrors RootView's switch on gateStatus
+        composable("authenticated") {
+            when (gateStatus) {
 
-            MainTabView(
-                onLogout = { authStateManager.logout() },
-                dailyLanguage = dailyLanguage,
-                currentUserName = currentUserName,
-                currentUserPhotoUrl = currentUserPhotoUrl,
-            )
+                // null = gate check not yet complete — show PreLoadView
+                null -> PreLoadView()
+
+                GateStatus.FORCE_UPDATE -> ForceUpdateView()
+
+                GateStatus.BANNED -> BannedAccountView()
+
+                GateStatus.SUSPENDED -> SuspendedAccountView()
+
+                GateStatus.UPDATED_TERMS -> UpdatedTermsView(
+                    onAcknowledged = {
+                        // Re-run gate after terms accepted —
+                        // mirrors UpdatedTermsView { Task { await checkGate() } }
+                        authStateManager.checkGate()
+                    },
+                )
+
+                GateStatus.CLEAR -> {
+                    val dailyLanguage      by authStateManager.dailyLanguage.collectAsState()
+                    val currentUserName    by authStateManager.currentUserName.collectAsState()
+                    val currentUserPhotoUrl by authStateManager.currentUserPhotoUrl.collectAsState()
+
+                    MainTabView(
+                        onLogout = { authStateManager.logout() },
+                        dailyLanguage = dailyLanguage,
+                        currentUserName = currentUserName,
+                        currentUserPhotoUrl = currentUserPhotoUrl,
+                    )
+                }
+            }
         }
     }
 }
