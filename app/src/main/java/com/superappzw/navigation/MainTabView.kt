@@ -10,10 +10,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
@@ -34,11 +31,15 @@ import com.superappzw.ui.categories.CategoryItem
 import com.superappzw.ui.favourites.FavouritesView
 import com.superappzw.ui.home.HomeView
 import com.superappzw.ui.lisitngs.MyListingsView
+import com.superappzw.ui.reviews.MyReviewsView
 import com.superappzw.ui.store.StoreListingDetailView
 import com.superappzw.ui.store.StoreProfileView
 import com.superappzw.ui.theme.IOSSystemBackground
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
+
+// Routes where the bottom bar should be visible
+private val ROOT_ROUTES = setOf("home", "myListings", "favourites")
 
 @Composable
 fun MainTabView(
@@ -48,112 +49,134 @@ fun MainTabView(
     currentUserPhotoUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
     val navController = rememberNavController()
+    val currentBackStack by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStack?.destination?.route
+
+    // Show bottom bar only on root tab screens — mirrors iOS hiding on push
+    val showBottomBar = currentRoute in ROOT_ROUTES
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(
-                containerColor = IOSSystemBackground
-            ) {
-                MainTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == tab,
-                        onClick = { selectedTab = tab },
-                        icon = { Icon(imageVector = tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PrimaryColor,
-                            selectedTextColor = PrimaryColor,
-                            indicatorColor = PrimaryColor.copy(alpha = 0.12f),
-                            unselectedIconColor = Color.Gray,
-                            unselectedTextColor = Color.Gray,
-                        ),
-                    )
+            if (showBottomBar) {
+                NavigationBar(containerColor = IOSSystemBackground) {
+                    MainTab.entries.forEach { tab ->
+                        val tabRoute = tab.route
+                        NavigationBarItem(
+                            selected = currentRoute == tabRoute,
+                            onClick = {
+                                if (currentRoute != tabRoute) {
+                                    navController.navigate(tabRoute) {
+                                        // Pop up to home so back stack doesn't grow
+                                        popUpTo("home") { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(imageVector = tab.icon, contentDescription = tab.label) },
+                            label = { Text(tab.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PrimaryColor,
+                                selectedTextColor = PrimaryColor,
+                                indicatorColor = PrimaryColor.copy(alpha = 0.12f),
+                                unselectedIconColor = Color.Gray,
+                                unselectedTextColor = Color.Gray,
+                            ),
+                        )
+                    }
                 }
             }
         },
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "tabs",
+            startDestination = "home",
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            // ── Tab container ─────────────────────────────────────────────────
-            composable("tabs") { backStackEntry ->
-                // Scope all ViewModels to the "tabs" destination so they survive navigation
-                val tabsEntry = remember(backStackEntry) {
-                    navController.getBackStackEntry("tabs")
-                }
 
-                when (selectedTab) {
-                    MainTab.HOME -> HomeView(
-                        onLogout = onLogout,
-                        dailyLanguage = dailyLanguage,
-                        currentUserName = currentUserName,
-                        currentUserPhotoUrl = currentUserPhotoUrl,
-                        onProfileTap = { navController.navigate("account") },
-                        onCategorySelect = { category ->
-                            val index = CategoryItem.all.indexOf(category)
-                            if (index >= 0) navController.navigate("categoryDetail/$index")
-                        },
-                        onListingTap = { itemCode, ownerUserID ->
-                            val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
-                            if (ownerUserID == currentUserID) {
-                                selectedTab = MainTab.MY_LISTINGS
-                            } else {
-                                navController.navigate("storeProfile/$ownerUserID")
+            // ── Root tabs ─────────────────────────────────────────────────────
+            composable("home") { backStackEntry ->
+                HomeView(
+                    onLogout = onLogout,
+                    dailyLanguage = dailyLanguage,
+                    currentUserName = currentUserName,
+                    currentUserPhotoUrl = currentUserPhotoUrl,
+                    onProfileTap = { navController.navigate("account") },
+                    onCategorySelect = { category ->
+                        val index = CategoryItem.all.indexOf(category)
+                        if (index >= 0) navController.navigate("categoryDetail/$index")
+                    },
+                    onListingTap = { itemCode, ownerUserID ->
+                        val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
+                        if (ownerUserID == currentUserID) {
+                            navController.navigate("myListings") {
+                                popUpTo("home") { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        },
-                        onStoreTap = { userID ->
-                            val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
-                            if (userID == currentUserID) {
-                                selectedTab = MainTab.MY_LISTINGS
-                            } else {
-                                navController.navigate("storeProfile/$userID")
+                        } else {
+                            navController.navigate("storeProfile/$ownerUserID")
+                        }
+                    },
+                    onStoreTap = { userID ->
+                        val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
+                        if (userID == currentUserID) {
+                            navController.navigate("myListings") {
+                                popUpTo("home") { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        },
-                        // ── Scoped ViewModels ─────────────────────────────────────────
-                        provinceViewModel = viewModel(tabsEntry),
-                        billboardViewModel = viewModel(tabsEntry),
-                        homeViewModel = viewModel(tabsEntry),
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    MainTab.MY_LISTINGS -> MyListingsView(
-                        navController = navController,
-                        viewModel = viewModel(tabsEntry),  // ← add this
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    MainTab.FAVOURITES -> FavouritesView(
-                        navController = navController,
-                        viewModel = viewModel(tabsEntry), // ← add this
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                        } else {
+                            navController.navigate("storeProfile/$userID")
+                        }
+                    },
+                    provinceViewModel = viewModel(),
+                    billboardViewModel = viewModel(),
+                    homeViewModel = viewModel(),
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
 
-            // ── Category detail ───────────────────────────────────────────────
+            composable("myListings") {
+                MyListingsView(
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            composable("favourites") {
+                FavouritesView(
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            composable("myReviews") {
+                MyReviewsView()
+            }
+
+            // ── Pushed screens — bottom bar hidden ────────────────────────────
             composable(
                 route = "categoryDetail/{categoryIndex}",
-                arguments = listOf(
-                    navArgument("categoryIndex") { type = NavType.IntType },
-                ),
+                arguments = listOf(navArgument("categoryIndex") { type = NavType.IntType }),
             ) { backStackEntry ->
-                val index = backStackEntry.arguments?.getInt("categoryIndex") ?: return@composable
+                val index    = backStackEntry.arguments?.getInt("categoryIndex") ?: return@composable
                 val category = CategoryItem.all.getOrNull(index) ?: return@composable
                 CategoryDetailView(
                     category = category,
                     onListingTap = { itemCode, ownerUserID ->
                         val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
                         if (ownerUserID == currentUserID) {
-                            // Own listing — pop back to tabs and switch to My Listings
-                            navController.popBackStack("tabs", inclusive = false)
-                            selectedTab = MainTab.MY_LISTINGS
+                            navController.navigate("myListings") {
+                                popUpTo("home") { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         } else {
-                            // Another user's listing — go to their store profile
                             navController.navigate("storeProfile/$ownerUserID")
                         }
                     },
@@ -161,24 +184,17 @@ fun MainTabView(
                 )
             }
 
-            // ── Account ───────────────────────────────────────────────────────
             composable("account") {
                 AccountView(navController = navController)
             }
 
-            // ── Profile detail ────────────────────────────────────────────────
             composable("profileDetail") {
-                ProfileDetailView(
-                    onDismiss = { navController.popBackStack() },
-                )
+                ProfileDetailView(onDismiss = { navController.popBackStack() })
             }
 
-            // ── Store profile ─────────────────────────────────────────────────
             composable(
                 route = "storeProfile/{ownerUserID}",
-                arguments = listOf(
-                    navArgument("ownerUserID") { type = NavType.StringType },
-                ),
+                arguments = listOf(navArgument("ownerUserID") { type = NavType.StringType }),
             ) { backStackEntry ->
                 val ownerUserID = backStackEntry.arguments?.getString("ownerUserID")
                     ?: return@composable
@@ -190,20 +206,12 @@ fun MainTabView(
                 )
             }
 
-            //Policies
+            composable("policies") { AppPoliciesView() }
 
-            composable("policies") {
-                AppPoliciesView()
-            }
-
-            //Support
             composable("support") {
-                SupportView(
-                    currentUserName = currentUserName
-                )
+                SupportView(currentUserName = currentUserName)
             }
 
-            // ── Listing detail ────────────────────────────────────────────────
             composable(
                 route = "listingDetail/{itemCode}/{ownerUserID}",
                 arguments = listOf(
@@ -211,18 +219,16 @@ fun MainTabView(
                     navArgument("ownerUserID") { type = NavType.StringType },
                 ),
             ) { backStackEntry ->
-                val itemCode = backStackEntry.arguments?.getString("itemCode") ?: return@composable
+                val itemCode    = backStackEntry.arguments?.getString("itemCode") ?: return@composable
                 val ownerUserID = backStackEntry.arguments?.getString("ownerUserID") ?: return@composable
                 StoreListingDetailView(
-                    itemCode = itemCode,
+                    itemCode    = itemCode,
                     ownerUserID = ownerUserID,
                 )
             }
         }
     }
 }
-
-// ── Preview ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

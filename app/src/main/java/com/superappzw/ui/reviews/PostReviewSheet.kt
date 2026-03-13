@@ -3,6 +3,7 @@ package com.superappzw.ui.reviews
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -121,28 +122,15 @@ fun PostReviewSheet(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     for (star in 1..5) {
-                        val isSelected = star <= selectedRating
-
-                        val scale by animateFloatAsState(
-                            targetValue = if (star == selectedRating) 1.2f else 1.0f,
-                            animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
-                            label = "starScale_$star",
-                        )
-
-                        IconButton(
-                            onClick = { selectedRating = star },
+                        Icon(
+                            imageVector = if (star <= selectedRating) Icons.Filled.Star
+                            else Icons.Outlined.StarOutline,
+                            contentDescription = "$star stars",
+                            tint = if (star <= selectedRating) Color(0xFFFFCC00) else Color(0xFFBDBDBD),
                             modifier = Modifier
-                                .size(48.dp)
-                                .scale(scale),
-                        ) {
-                            Icon(
-                                imageVector = if (isSelected) Icons.Filled.Star
-                                else Icons.Outlined.StarOutline,
-                                contentDescription = "$star stars",
-                                tint = if (isSelected) Color(0xFFFFCC00) else Color(0xFFBDBDBD),
-                                modifier = Modifier.size(36.dp),
-                            )
-                        }
+                                .size(36.dp)
+                                .clickable { selectedRating = star },
+                        )
                     }
                 }
             }

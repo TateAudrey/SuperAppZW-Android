@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -137,7 +139,7 @@ fun AccountView(
             // ── My account ────────────────────────────────────────────────────
             AccountSection(title = "MY ACCOUNT") {
                 AccountNavRow(
-                    icon = Icons.Filled.AutoAwesome,
+                    icon = Icons.Filled.Person,
                     label = "Account Details",
                     onClick = { navController.navigate("profileDetail") },
                 )
@@ -148,6 +150,12 @@ fun AccountView(
 //                    label = "Activate Premium",
 //                    onClick = { /* TODO */ },
 //                )
+                AccountNavRow(
+                    icon = Icons.Filled.Star,
+                    label = "My Reviews",
+                    onClick = { navController.navigate("myReviews") },
+                )
+
                 SectionDivider()
                 AccountNavRow(
                     icon = Icons.Filled.Description,
