@@ -114,6 +114,7 @@ fun ListingsSectionView(
                                         description = listing.description,
                                         price = listing.price,
                                         currency = listing.currency,
+                                        isNegotiable = listing.isNegotiable,
                                         itemCode = listing.itemCode,
                                         imageURL = listing.imageURL,
                                         viewCount = listing.viewCount,

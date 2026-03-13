@@ -5,6 +5,7 @@ data class ListingModel(
     val description: String,
     val price: Double,
     val currency: String,
+    val isNegotiable: Boolean = false,
     val itemCode: String,
     val imageURL: String?,
     val viewCount: Int,

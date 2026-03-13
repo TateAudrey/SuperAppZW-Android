@@ -233,7 +233,10 @@ private fun StoreListingDetailContent(
                 text = buildAnnotatedString {
                     append("Price: ")
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = PrimaryColor)) {
-                        append(listing.price.formattedPrice(listing.currency))
+                        append(
+                            if (listing.isNegotiable) "Negotiable"
+                            else listing.price.formattedPrice(listing.currency)
+                        )
                     }
                 },
                 fontSize = 14.sp,

@@ -25,6 +25,7 @@ fun ListingCard(
         description = model.description,
         price = model.price,
         currency = model.currency,
+        isNegotiable = model.isNegotiable,
         itemCode = model.itemCode,
         viewCount = model.viewCount,
         modifier = modifier

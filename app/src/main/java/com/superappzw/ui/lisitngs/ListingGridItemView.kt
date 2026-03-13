@@ -43,6 +43,7 @@ fun ListingGridItemView(
     description: String,
     price: Double,
     currency: String,
+    isNegotiable: Boolean = false,
     itemCode: String,
     viewCount: Int,
     modifier: Modifier = Modifier,
@@ -127,7 +128,7 @@ fun ListingGridItemView(
                     color = Color(0xFF1A1A1A),
                 )
                 Text(
-                    text = price.formattedPrice(currency),
+                    text = if (isNegotiable) "Negotiable" else price.formattedPrice(currency),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1A1A1A),
