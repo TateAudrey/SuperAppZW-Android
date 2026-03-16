@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -228,12 +229,25 @@ private fun ProfileCircle(
 
 @Composable
 private fun PlaceholderContent(initial: String) {
-    if (initial.isNotEmpty()) {
-        Text(text = initial, fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold, color = Color.White)
-    } else {
-        Icon(imageVector = Icons.Filled.Person, contentDescription = null,
-            tint = Color.White, modifier = Modifier.size(22.dp))
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        if (initial.isNotEmpty()) {
+            Text(
+                text = initial,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp),
+            )
+        }
     }
 }
 
