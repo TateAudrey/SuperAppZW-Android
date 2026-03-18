@@ -132,9 +132,10 @@ fun ListingGridItemView(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1A1A1A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),  // ← takes remaining space, never pushes eye icon
                 )
-
-                Spacer(modifier = Modifier.weight(1f))
 
                 Icon(
                     imageVector = Icons.Filled.RemoveRedEye,
@@ -178,7 +179,7 @@ private fun ListingGridItemViewPreview() {
     SuperAppZWTheme {
         ListingGridItemView(
             url = "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400",
-            title = "Eggs",
+            title = "Maintanance free automative batteries",
             description = "Dozen eggs",
             price = 4.00,
             currency = "USD",
