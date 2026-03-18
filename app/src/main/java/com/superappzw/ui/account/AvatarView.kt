@@ -38,6 +38,7 @@ fun AvatarView(
     modifier: Modifier = Modifier,
 ) {
     Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .size(size)
             .clickable(enabled = !isUploading) { onTap() },

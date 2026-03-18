@@ -73,7 +73,7 @@ fun ProfileDetailView(
     val profileImageURL by viewModel.profileImageURL.collectAsState()
     val isUploadingImage by viewModel.isUploadingImage.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
-    val isFormValid by lazy { viewModel.isFormValid }
+    val isFormValid by viewModel.isFormValid.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val didSaveSuccessfully by viewModel.didSaveSuccessfully.collectAsState()
     val showImageSourceSheet by viewModel.showImageSourceSheet.collectAsState()
@@ -127,11 +127,11 @@ fun ProfileDetailView(
                     } else {
                         TextButton(
                             onClick = { viewModel.saveProfile() },
-                            enabled = viewModel.isFormValid,
+                            enabled = isFormValid,
                         ) {
                             Text(
                                 text = "Save",
-                                color = if (viewModel.isFormValid) PrimaryColor else Color.Gray,
+                                color = if (isFormValid) PrimaryColor else Color.Gray,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
@@ -151,7 +151,13 @@ fun ProfileDetailView(
                 .padding(vertical = 20.dp),
         ) {
 
-            // ── Avatar header ─────────────────────────────────────────────────
+// ── Avatar header ─────────────────────────────────────────────────
+            val initials = remember(firstName, lastName) {
+                val f = firstName.take(1).uppercase()
+                val l = lastName.take(1).uppercase()
+                if (f.isEmpty()) "?" else "$f$l"
+            }
+
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier
@@ -160,7 +166,7 @@ fun ProfileDetailView(
             ) {
                 AvatarView(
                     imageURL = profileImageURL,
-                    initials = viewModel.initials,
+                    initials = initials,
                     isUploading = isUploadingImage,
                     onTap = { viewModel.setShowImageSourceSheet(true) },
                 )

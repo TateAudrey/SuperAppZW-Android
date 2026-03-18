@@ -32,7 +32,6 @@ class ProfileDetailViewModel : ViewModel() {
     private val _emailAddress = MutableStateFlow("")
     val emailAddress: StateFlow<String> = _emailAddress.asStateFlow()
 
-
     private val _virtualShopName = MutableStateFlow("")
     val virtualShopName: StateFlow<String> = _virtualShopName.asStateFlow()
 
@@ -56,6 +55,22 @@ class ProfileDetailViewModel : ViewModel() {
     private val _didSaveSuccessfully = MutableStateFlow(false)
     val didSaveSuccessfully: StateFlow<Boolean> = _didSaveSuccessfully.asStateFlow()
 
+    // ── Form validity — reactive StateFlow so Save button updates instantly ───
+
+    private val _isFormValid = MutableStateFlow(false)
+    val isFormValid: StateFlow<Boolean> = _isFormValid.asStateFlow()
+
+    private fun updateFormValidity() {
+        _isFormValid.value = _firstName.value.isNotBlank() &&
+                _lastName.value.isNotBlank() &&
+                _phoneNumber.value.isNotBlank() &&
+                _location.value.isNotBlank() &&
+                _suburb.value.isNotBlank() &&
+                _virtualShopName.value.isNotBlank()
+        // Note: profileImageURL is intentionally excluded —
+        // users can save without a profile image
+    }
+
     // ── Image picker state ────────────────────────────────────────────────────
 
     private val _showImageSourceSheet = MutableStateFlow(false)
@@ -67,14 +82,6 @@ class ProfileDetailViewModel : ViewModel() {
     private var hasLoaded = false
 
     // ── Computed properties ───────────────────────────────────────────────────
-
-    val isFormValid: Boolean
-        get() = _firstName.value.isNotBlank() &&
-                _lastName.value.isNotBlank() &&
-                _phoneNumber.value.isNotBlank() &&
-                _location.value.isNotBlank() &&
-                _suburb.value.isNotBlank() &&
-                _virtualShopName.value.isNotBlank()
 
     val fullName: String
         get() = "${_firstName.value} ${_lastName.value}".trim()
@@ -88,19 +95,19 @@ class ProfileDetailViewModel : ViewModel() {
 
     // ── Field updaters (called from UI) ───────────────────────────────────────
 
-    fun onFirstNameChange(value: String) { _firstName.value = value }
-    fun onLastNameChange(value: String) { _lastName.value = value }
-    fun onSuburbChange(value: String) { _suburb.value = value }
-    fun onLocationChange(value: String) { _location.value = value }
-    fun onPhoneNumberChange(value: String) { _phoneNumber.value = value }
-    fun onEmailAddressChange(value: String) { _phoneNumber.value = value }
-    fun onVirtualShopNameChange(value: String) { _virtualShopName.value = value }
+    fun onFirstNameChange(value: String) { _firstName.value = value; updateFormValidity() }
+    fun onLastNameChange(value: String) { _lastName.value = value; updateFormValidity() }
+    fun onSuburbChange(value: String) { _suburb.value = value; updateFormValidity() }
+    fun onLocationChange(value: String) { _location.value = value; updateFormValidity() }
+    fun onPhoneNumberChange(value: String) { _phoneNumber.value = value; updateFormValidity() }
+    fun onEmailAddressChange(value: String) { _emailAddress.value = value }
+    fun onVirtualShopNameChange(value: String) { _virtualShopName.value = value; updateFormValidity() }
     fun setShowImageSourceSheet(show: Boolean) { _showImageSourceSheet.value = show }
 
     // ── Load profile ──────────────────────────────────────────────────────────
 
     fun loadProfile() {
-        if (hasLoaded) return           // guard against re-fetch on recomposition
+        if (hasLoaded) return
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         viewModelScope.launch {
@@ -115,7 +122,8 @@ class ProfileDetailViewModel : ViewModel() {
                 _emailAddress.value = profile.emailAddress
                 _virtualShopName.value = profile.virtualShopName
                 _profileImageURL.value = profile.profileImageURL
-                hasLoaded = true        // mark loaded so returning from picker doesn't re-fetch
+                hasLoaded = true
+                updateFormValidity()  // ← activate Save button as soon as data loads
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             } finally {
@@ -127,7 +135,7 @@ class ProfileDetailViewModel : ViewModel() {
     // ── Save profile ──────────────────────────────────────────────────────────
 
     fun saveProfile() {
-        if (!isFormValid) {
+        if (!_isFormValid.value) {
             _errorMessage.value = "Please fill in all fields to complete your profile."
             return
         }
@@ -167,10 +175,7 @@ class ProfileDetailViewModel : ViewModel() {
         viewModelScope.launch {
             _isUploadingImage.value = true
             try {
-                // Crop, resize, upload, and write URL to Firestore — all in UserService
                 val downloadURL = userService.uploadProfileImage(uid = uid, bitmap = bitmap)
-
-                // Update local URL so the avatar refreshes immediately
                 _profileImageURL.value = downloadURL
             } catch (e: Exception) {
                 _errorMessage.value = e.message
