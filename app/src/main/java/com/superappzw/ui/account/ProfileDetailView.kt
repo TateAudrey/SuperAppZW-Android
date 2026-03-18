@@ -238,7 +238,9 @@ fun ProfileDetailView(
                         expanded = showProvinceDropdown,
                         onDismissRequest = { showProvinceDropdown = false },
                     ) {
-                        provinces.forEach { province ->
+                        provinces
+                            .filter { it != "All Provinces" }
+                            .forEach { province ->
                             DropdownMenuItem(
                                 text = { Text(province, fontSize = 14.sp) },
                                 onClick = {
