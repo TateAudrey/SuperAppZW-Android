@@ -82,6 +82,7 @@ dependencies {
     // ── Image loading ─────────────────────────────────────────────────────────
     implementation(libs.coil.compose)
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.compose.ui.text)
 
     // ── Testing ───────────────────────────────────────────────────────────────
     testImplementation(libs.junit)

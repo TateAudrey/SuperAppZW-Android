@@ -59,7 +59,6 @@ fun ProvinceDropDown(
 
     var isExpanded by remember { mutableStateOf(false) }
 
-    // Fetch on first appearance — mirrors Swift .task { await store.load() }
     LaunchedEffect(Unit) {
         viewModel.load()
     }
@@ -75,8 +74,11 @@ fun ProvinceDropDown(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.07f))
+                .shadow(
+                    elevation = 4.dp,
+                    shape = RoundedCornerShape(12.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.07f),
+                )
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
                 .clickable(
@@ -95,10 +97,10 @@ fun ProvinceDropDown(
             Spacer(modifier = Modifier.width(10.dp))
 
             Text(
-                text = selectedProvince ?: "Select Location",
+                text = selectedProvince ?: "All Provinces",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (selectedProvince != null) Color(0xFF1A1A1A) else Color(0xFF9E9E9E),
+                color = Color(0xFF1A1A1A),
                 modifier = Modifier.weight(1f),
             )
 
@@ -131,8 +133,11 @@ fun ProvinceDropDown(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 6.dp)
-                    .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.07f))
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = RoundedCornerShape(12.dp),
+                        ambientColor = Color.Black.copy(alpha = 0.07f),
+                    )
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color.White),
             ) {
@@ -159,7 +164,13 @@ fun ProvinceDropDown(
                             modifier = Modifier.weight(1f),
                         )
 
-                        if (selectedProvince == province) {
+                        val isSelected = if (province == "All Provinces") {
+                            selectedProvince == null
+                        } else {
+                            selectedProvince == province
+                        }
+
+                        if (isSelected) {
                             Icon(
                                 imageVector = Icons.Filled.Check,
                                 contentDescription = "Selected",
@@ -169,12 +180,11 @@ fun ProvinceDropDown(
                         }
                     }
 
-                    // Divider between items, not after last
                     if (index < provinces.lastIndex) {
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 14.dp),
                             thickness = 0.5.dp,
-                            color = Color(0xFFF0F0F0)
+                            color = Color(0xFFF0F0F0),
                         )
                     }
                 }
@@ -189,7 +199,6 @@ fun ProvinceDropDown(
 @Composable
 private fun ProvinceDropDownPreview() {
     SuperAppZWTheme {
-        // Simulate a loaded ViewModel state for preview
         Box(modifier = Modifier.padding(top = 20.dp)) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(

@@ -1,5 +1,7 @@
 package com.superappzw.ui.store
 
+import com.google.firebase.Timestamp
+
 data class StoreListing(
     val id: String = java.util.UUID.randomUUID().toString(),
     val title: String,
@@ -12,6 +14,7 @@ data class StoreListing(
     val ownerUserID: String,
     val location: String = "",
     val isNegotiable: Boolean = false,
+    val createdAt: Timestamp? = null,
 ) {
     // Convenience — mirrors Swift's displayPrice computed property
     val displayPrice: String

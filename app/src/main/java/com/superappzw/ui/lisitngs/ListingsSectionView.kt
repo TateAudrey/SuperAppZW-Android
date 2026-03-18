@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,8 +36,10 @@ fun ListingsSectionView(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val listings by viewModel.allListings.collectAsState()
-    val isLoading by viewModel.isLoadingListings.collectAsState()
+    val listings      by viewModel.allListings.collectAsState()
+    val isLoading     by viewModel.isLoadingListings.collectAsState()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+    val hasMore       by viewModel.hasMore.collectAsState()
 
     when {
 
@@ -93,7 +96,7 @@ fun ListingsSectionView(
             }
         }
 
-        // ── Grid (Manual Layout to avoid infinite height crash in Scrollable) ──
+        // ── Grid ──────────────────────────────────────────────────────────────
         else -> {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -110,25 +113,64 @@ fun ListingsSectionView(
                             Box(modifier = Modifier.weight(1f)) {
                                 ListingCard(
                                     model = ListingModel(
-                                        title = listing.title,
-                                        description = listing.description,
-                                        price = listing.price,
-                                        currency = listing.currency,
+                                        title        = listing.title,
+                                        description  = listing.description,
+                                        price        = listing.price,
+                                        currency     = listing.currency,
                                         isNegotiable = listing.isNegotiable,
-                                        itemCode = listing.itemCode,
-                                        imageURL = listing.imageURL,
-                                        viewCount = listing.viewCount,
-                                        ownerUserID = listing.ownerUserID
+                                        itemCode     = listing.itemCode,
+                                        imageURL     = listing.imageURL,
+                                        viewCount    = listing.viewCount,
+                                        ownerUserID  = listing.ownerUserID,
                                     ),
                                     onTap = { onTap(listing.itemCode, listing.ownerUserID) },
                                 )
                             }
                         }
-                        // Add spacer if the row is not full to keep alignment
                         if (rowItems.size == 1) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
                     }
+                }
+
+                // ── Load more trigger ─────────────────────────────────────────
+                if (hasMore) {
+                    if (isLoadingMore) {
+                        // Spinner centred across full width
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                        ) {
+                            CircularProgressIndicator(
+                                color = PrimaryColor,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    } else {
+                        // Invisible trigger — fires loadMoreIfNeeded when scrolled into view
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .size(1.dp),
+                        ) {
+                            LaunchedEffect(listings.size) {
+                                viewModel.loadMoreIfNeeded()
+                            }
+                        }
+                    }
+                } else {
+                    // End of results
+                    Text(
+                        text = "You've seen all listings",
+                        fontSize = 13.sp,
+                        color = Color.Gray,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                    )
                 }
             }
         }

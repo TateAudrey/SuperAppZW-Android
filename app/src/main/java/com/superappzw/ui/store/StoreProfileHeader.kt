@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -131,13 +132,18 @@ fun StoreProfileHeader(
 }
 
 @Composable
- fun InitialsContent(initials: String) {
-    Text(
-        text = initials,
-        fontSize = 22.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = Color.White,
-    )
+fun InitialsContent(initials: String) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        Text(
+            text = initials,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White,
+        )
+    }
 }
 
 // ── Previews ──────────────────────────────────────────────────────────────────

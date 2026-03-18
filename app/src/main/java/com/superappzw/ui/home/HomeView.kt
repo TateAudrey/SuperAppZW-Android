@@ -12,13 +12,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.superappzw.model.DailyLanguageModel
 import com.superappzw.navigation.CustomNavBar
@@ -31,6 +31,8 @@ import com.superappzw.ui.home.province.ProvinceViewModel
 import com.superappzw.ui.lisitngs.ListingsSectionView
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 fun HomeView(
@@ -45,7 +47,7 @@ fun HomeView(
     provinceViewModel: ProvinceViewModel = viewModel(),
     billboardViewModel: BillboardViewModel = viewModel(),
     homeViewModel: HomeViewModel = viewModel(),
-    onStoreTap: ((userID: String) -> Unit)? = null
+    onStoreTap: ((userID: String) -> Unit)? = null,
 ) {
     // ── Derived values ────────────────────────────────────────────────────────
 
@@ -76,12 +78,20 @@ fun HomeView(
 
     val selectedProvince by provinceViewModel.selectedProvince.collectAsState()
 
-    // ── Load on first appearance ──────────────────────────────────────────────
+    // ── Refresh listings on resume (keeps view counts in sync) ───────────────
 
-// ── Load on first appearance ──────────────────────────────────────────────
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            billboardViewModel.load()
+            homeViewModel.refreshListings(province = selectedProvince)
+        }
+    }
+
+    // ── Re-fetch when province changes ────────────────────────────────────────
 
     LaunchedEffect(selectedProvince) {
-        billboardViewModel.load()
         homeViewModel.refreshListings(province = selectedProvince)
     }
 

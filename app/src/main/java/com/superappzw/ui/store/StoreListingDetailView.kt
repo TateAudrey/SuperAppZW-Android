@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -201,12 +202,17 @@ private fun StoreListingDetailContent(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f),  // ← constrain title column
+            ) {
                 Text(
                     text = listing.title,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 Row(
@@ -227,7 +233,7 @@ private fun StoreListingDetailContent(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.size(12.dp))  // ← fixed gap, not weight
 
             Text(
                 text = buildAnnotatedString {
