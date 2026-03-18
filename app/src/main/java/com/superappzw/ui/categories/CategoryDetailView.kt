@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,6 +39,7 @@ import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.lazy.itemsIndexed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,8 +53,10 @@ fun CategoryDetailView(
         factory = CategoryDetailViewModelFactory(category),
     )
 
-    val listings by viewModel.listings.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val listings      by viewModel.listings.collectAsState()
+    val isLoading     by viewModel.isLoading.collectAsState()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+    val hasMore       by viewModel.hasMore.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.load()
@@ -131,16 +133,15 @@ fun CategoryDetailView(
                 }
 
                 // ── Listings grid ─────────────────────────────────────────────
-                // Uses LazyColumn with 2-per-row chunked layout —
-                // avoids nested scroll issues with LazyVerticalGrid
                 else -> {
+                    val rows = listings.chunked(2)
+
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        val rows = listings.chunked(2)
-                        items(rows) { rowItems ->
+                        itemsIndexed(rows) { index, rowItems ->
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 modifier = Modifier.fillMaxWidth(),
@@ -148,15 +149,15 @@ fun CategoryDetailView(
                                 rowItems.forEach { listing ->
                                     ListingCard(
                                         model = ListingModel(
-                                            title = listing.title,
-                                            description = listing.description,
-                                            price = listing.price,
-                                            currency = listing.currency,
+                                            title        = listing.title,
+                                            description  = listing.description,
+                                            price        = listing.price,
+                                            currency     = listing.currency,
                                             isNegotiable = listing.isNegotiable,
-                                            itemCode = listing.itemCode,
-                                            imageURL = listing.imageURL,
-                                            viewCount = listing.viewCount,
-                                            ownerUserID = listing.ownerUserID,
+                                            itemCode     = listing.itemCode,
+                                            imageURL     = listing.imageURL,
+                                            viewCount    = listing.viewCount,
+                                            ownerUserID  = listing.ownerUserID,
                                         ),
                                         onTap = {
                                             onListingTap(listing.itemCode, listing.ownerUserID)
@@ -164,9 +165,48 @@ fun CategoryDetailView(
                                         modifier = Modifier.weight(1f),
                                     )
                                 }
-                                // Fill empty slot in last row if odd number of listings
                                 if (rowItems.size == 1) {
                                     Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+
+                            // ── Load more trigger on last row ─────────────────
+                            if (index == rows.lastIndex) {
+                                if (hasMore) {
+                                    LaunchedEffect(listings.size) {
+                                        viewModel.loadMoreIfNeeded()
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Footer ────────────────────────────────────────────
+                        item {
+                            if (isLoadingMore) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = PrimaryColor,
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                            } else if (!hasMore && listings.isNotEmpty()) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
+                                ) {
+                                    Text(
+                                        text = "You've seen all listings",
+                                        fontSize = 13.sp,
+                                        color = Color.Gray,
+                                    )
                                 }
                             }
                         }

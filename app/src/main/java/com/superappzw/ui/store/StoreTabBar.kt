@@ -3,6 +3,7 @@ package com.superappzw.ui.store
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,7 +51,10 @@ fun StoreTabBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .background(Color.White)
+            .padding(horizontal = 16.dp)
+            .padding(vertical = 8.dp),
+
     ) {
         StoreTab.entries.forEach { tab ->
             val isSelected = tab == selectedTab

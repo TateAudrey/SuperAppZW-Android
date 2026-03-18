@@ -8,12 +8,15 @@ import com.google.firebase.storage.FirebaseStorage
 import com.superappzw.ui.store.StoreListing
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 
 class ListingService {
 
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val pageSize = 10L
 
     // ── Publish listing ───────────────────────────────────────────────────────
 
@@ -26,7 +29,7 @@ class ListingService {
         description: String,
         imageData: ByteArray?,
         userId: String,
-        location: String = "",          // ← added
+        location: String = "",
     ) {
         ensureListingsDocumentExists(userId)
         publishListingData(
@@ -51,7 +54,7 @@ class ListingService {
         description: String,
         imageData: ByteArray?,
         userId: String,
-        location: String = "",          // ← added
+        location: String = "",
     ) {
         val userDocRef = db.collection("listings").document(userId)
         val itemCode = generateUniqueItemCode()
@@ -72,7 +75,7 @@ class ListingService {
                 "viewCount"   to 0,
                 "createdAt"   to clientTimestamp,
                 "type"        to type.value,
-                "location"    to location,      // ← added
+                "location"    to location,
             )
 
             userDocRef.update("myListings", FieldValue.arrayUnion(listing)).await()
@@ -177,7 +180,7 @@ class ListingService {
         return data["myServices"] as? List<String> ?: emptyList()
     }
 
-    // ── Fetch single listing ──────────────────────────────────────────────────────
+    // ── Fetch single listing ──────────────────────────────────────────────────
 
     suspend fun fetchListing(itemCode: String, ownerUserID: String): StoreListing {
         val snapshot = db.collection("listings").document(ownerUserID).get().await()
@@ -208,7 +211,7 @@ class ListingService {
             .await()
     }
 
-    // ── Fetch listings by category ────────────────────────────────────────────
+    // ── Fetch listings by category (non-paginated — kept for compatibility) ───
 
     suspend fun fetchListingsByCategory(categoryName: String): List<StoreListing> {
         val snapshot = db.collection("listings").get().await()
@@ -225,6 +228,52 @@ class ListingService {
                 .filter { it["category"] as? String == categoryName }
                 .mapNotNull { it.toStoreListing(ownerUserID = userId) }
         }
+    }
+
+    // ── Fetch listings by category (paginated) ────────────────────────────────
+
+    data class PageResult(
+        val listings: List<StoreListing>,
+        val lastDocument: DocumentSnapshot?,
+        val hasMore: Boolean,
+    )
+
+    suspend fun fetchListingsByCategoryPage(
+        categoryName: String,
+        after: DocumentSnapshot? = null,
+    ): PageResult {
+        var query = db.collection("listings")
+            .orderBy(FieldPath.documentId())
+            .limit(pageSize)
+
+        after?.let { query = query.startAfter(it) }
+
+        val snapshot = query.get().await()
+        val docs = snapshot.documents
+
+        val results = mutableListOf<StoreListing>()
+
+        for (document in docs) {
+            val data = document.data ?: continue
+            @Suppress("UNCHECKED_CAST")
+            val myListings = data["myListings"] as? List<Map<String, Any>> ?: continue
+
+            myListings
+                .filter { it["category"] as? String == categoryName }
+                .mapNotNull { it.toStoreListing(ownerUserID = document.id) }
+                .forEach { results.add(it) }
+        }
+
+        // Sort newest first
+        results.sortByDescending {
+            (it.createdAt as? Timestamp)?.seconds ?: 0L
+        }
+
+        return PageResult(
+            listings = results,
+            lastDocument = docs.lastOrNull(),
+            hasMore = docs.size.toLong() == pageSize,
+        )
     }
 
     // ── Delete listing ────────────────────────────────────────────────────────
@@ -298,16 +347,17 @@ class ListingService {
 
     // ── Mapping helper ────────────────────────────────────────────────────────
 
-    private fun Map<String, Any>.toStoreListing(ownerUserID: String): StoreListing? {
+    fun Map<String, Any>.toStoreListing(ownerUserID: String): StoreListing? {
         val title          = this["title"]       as? String ?: return null
-        val itemCode       = this["itemCode"]     as? String ?: return null
-        val imageURLString = this["imageURL"]     as? String ?: return null
-        val priceString    = this["price"]        as? String ?: return null
-        val currency       = this["currency"]     as? String ?: return null
-        val viewCount      = (this["viewCount"]   as? Long)?.toInt() ?: 0
-        val description    = this["description"]  as? String ?: ""
-        val location       = this["location"]     as? String ?: ""      // ← added
-        val isNegotiable   = priceString.trim() == "Negotiable"         // ← added
+        val itemCode       = this["itemCode"]    as? String ?: return null
+        val imageURLString = this["imageURL"]    as? String ?: return null
+        val priceString    = this["price"]       as? String ?: return null
+        val currency       = this["currency"]    as? String ?: return null
+        val viewCount      = (this["viewCount"]  as? Long)?.toInt() ?: 0
+        val description    = this["description"] as? String ?: ""
+        val location       = this["location"]    as? String ?: ""
+        val createdAt      = this["createdAt"]   as? Timestamp
+        val isNegotiable   = priceString.trim() == "Negotiable"
         val price          = if (isNegotiable) 0.0 else priceString.toDoubleOrNull() ?: 0.0
 
         return StoreListing(
@@ -319,8 +369,9 @@ class ListingService {
             imageURL     = imageURLString.takeIf { it.isNotBlank() },
             viewCount    = viewCount,
             ownerUserID  = ownerUserID,
-            location     = location,        // ← added
-            isNegotiable = isNegotiable,    // ← added
+            location     = location,
+            isNegotiable = isNegotiable,
+            createdAt    = createdAt,
         )
     }
 }

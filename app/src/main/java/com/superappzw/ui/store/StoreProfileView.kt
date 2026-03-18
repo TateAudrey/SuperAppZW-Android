@@ -43,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.superappzw.model.StoreReviewModel
 import com.superappzw.ui.components.utils.EmptyStateView
 import com.superappzw.ui.lisitngs.ListingsGridView
 import com.superappzw.ui.reviews.PostReviewSheet
@@ -58,11 +59,8 @@ fun StoreProfileView(
     storeProfileViewModel: StoreProfileViewModel = viewModel(),
     reviewViewModel: ReviewViewModel = viewModel(),
 ) {
-    val context = LocalContext.current
-    val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
-
-    var selectedTab by rememberSaveable { mutableStateOf(StoreTab.PRODUCTS) }
-    var showPostReview by remember { mutableStateOf(false) }
+    // Wrap FirebaseAuth call in a try-catch to avoid crashes in Preview environments
+    val currentUserID = try { FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
 
     val storeName by storeProfileViewModel.storeName.collectAsState()
     val ownerName by storeProfileViewModel.ownerName.collectAsState()
@@ -79,12 +77,79 @@ fun StoreProfileView(
     val isSubmitting by reviewViewModel.isSubmitting.collectAsState()
     val submitSuccess by reviewViewModel.submitSuccess.collectAsState()
     val reviewErrorMessage by reviewViewModel.errorMessage.collectAsState()
+    val reviews by reviewViewModel.reviews.collectAsState()
+    val averageRating by reviewViewModel.averageRating.collectAsState()
+    val totalReviews by reviewViewModel.totalReviews.collectAsState()
 
     // Load both ViewModels on first composition — mirrors Swift's .task { }
     LaunchedEffect(storeID) {
         storeProfileViewModel.load(storeID)
         reviewViewModel.load(storeID)
     }
+
+    StoreProfileContent(
+        storeID = storeID,
+        currentUserID = currentUserID,
+        storeName = storeName,
+        ownerName = ownerName,
+        suburb = suburb,
+        location = location,
+        profileImageURL = profileImageURL,
+        ownerUID = ownerUID,
+        products = products,
+        services = services,
+        isLoading = isLoading,
+        phoneNumber = phoneNumber,
+        hasReviewed = hasReviewed,
+        isSubmitting = isSubmitting,
+        submitSuccess = submitSuccess,
+        reviewErrorMessage = reviewErrorMessage,
+        reviews = reviews,
+        averageRating = averageRating,
+        totalReviews = totalReviews,
+        onNavigateToListing = onNavigateToListing,
+        onSubmitReview = { rating, comment ->
+            reviewViewModel.submitReview(
+                storeOwnerUID = ownerUID,
+                comment = comment,
+                rating = rating,
+            )
+        }
+    )
+}
+
+/**
+ * A stateless version of StoreProfileView that can be rendered in Previews.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StoreProfileContent(
+    storeID: String,
+    currentUserID: String?,
+    storeName: String,
+    ownerName: String,
+    suburb: String,
+    location: String,
+    profileImageURL: String?,
+    ownerUID: String,
+    products: List<StoreListing>,
+    services: List<String>,
+    isLoading: Boolean,
+    phoneNumber: String?,
+    hasReviewed: Boolean,
+    isSubmitting: Boolean,
+    submitSuccess: Boolean,
+    reviewErrorMessage: String?,
+    reviews: List<StoreReviewModel>,
+    averageRating: Double,
+    totalReviews: Int,
+    onNavigateToListing: (StoreListing) -> Unit,
+    onSubmitReview: (Int, String) -> Unit,
+) {
+    val context = LocalContext.current
+
+    var selectedTab by rememberSaveable { mutableStateOf(StoreTab.PRODUCTS) }
+    var showPostReview by remember { mutableStateOf(false) }
 
     // Auto-dismiss PostReviewSheet on successful submission
     LaunchedEffect(submitSuccess) {
@@ -140,7 +205,6 @@ fun StoreProfileView(
                     StoreTabBar(
                         selectedTab = selectedTab,
                         onTabSelected = { selectedTab = it },
-                        modifier = Modifier.padding(vertical = 8.dp),
                     )
                     HorizontalDivider()
                 }
@@ -173,7 +237,12 @@ fun StoreProfileView(
                     onNavigateToListing = onNavigateToListing,
                 )
                 StoreTab.SERVICES -> StoreServicesTab(services = services)
-                StoreTab.REVIEWS  -> StoreReviewsTab(viewModel = reviewViewModel)
+                StoreTab.REVIEWS  -> StoreReviewsTab(
+                    isLoading = isLoading,
+                    reviews = reviews,
+                    averageRating = averageRating,
+                    totalReviews = totalReviews,
+                )
             }
         }
     }
@@ -186,13 +255,7 @@ fun StoreProfileView(
             isSubmitting = isSubmitting,
             errorMessage = reviewErrorMessage,
             submitSuccess = submitSuccess,
-            onSubmit = { rating, comment ->
-                reviewViewModel.submitReview(
-                    storeOwnerUID = ownerUID,
-                    comment = comment,
-                    rating = rating,
-                )
-            },
+            onSubmit = onSubmitReview,
             onDismiss = { showPostReview = false },
         )
     }
@@ -271,6 +334,60 @@ private fun ProductsTab(
 @Composable
 private fun StoreProfileViewPreview() {
     SuperAppZWTheme {
-        StoreProfileView(storeID = "UT0mHxc1IJcuRsibi3srlMbISZI2")
+        StoreProfileContent(
+            storeID = "preview_id",
+            currentUserID = "other_id",
+            storeName = "Super Store ZW",
+            ownerName = "John Doe",
+            suburb = "Harare Central",
+            location = "Harare, Zimbabwe",
+            profileImageURL = null,
+            ownerUID = "preview_id",
+            products = listOf(
+                StoreListing(
+                    title = "Sample Product 1",
+                    description = "Description 1",
+                    price = 100.0,
+                    currency = "USD",
+                    itemCode = "P1",
+                    imageURL = null,
+                    viewCount = 10,
+                    ownerUserID = "preview_id"
+                ),
+                StoreListing(
+                    title = "Sample Product 2",
+                    description = "Description 2",
+                    price = 50.0,
+                    currency = "USD",
+                    itemCode = "P2",
+                    imageURL = null,
+                    viewCount = 5,
+                    ownerUserID = "preview_id"
+                )
+            ),
+            services = listOf("Consulting", "Delivery", "Repair"),
+            isLoading = false,
+            phoneNumber = "+263771234567",
+            hasReviewed = false,
+            isSubmitting = false,
+            submitSuccess = false,
+            reviewErrorMessage = null,
+            reviews = listOf(
+                StoreReviewModel(
+                    reviewerName = "Alice",
+                    comment = "Great service!",
+                    rating = 5
+                ),
+                StoreReviewModel(
+                    reviewerName = "Bob",
+                    comment = "Good products.",
+                    rating = 4
+                )
+            ),
+            averageRating = 4.5,
+            totalReviews = 2,
+            onNavigateToListing = {},
+            onSubmitReview = { _, _ -> }
+        )
     }
 }

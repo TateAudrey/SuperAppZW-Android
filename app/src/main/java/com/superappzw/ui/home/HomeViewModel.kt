@@ -104,10 +104,13 @@ class HomeViewModel : ViewModel() {
                     .trim()
                     .lowercase()
                 newListings.filter {
-                    it.location
+                    val loc = it.location
                         .replace(" Province", "", ignoreCase = true)
                         .trim()
-                        .lowercase() == normalized
+                        .lowercase()
+                    loc == normalized
+                            || loc == "all provinces"   // ← always include nationwide listings
+                            || loc.isBlank()            // ← include listings with no location set
                 }
             } else {
                 newListings
