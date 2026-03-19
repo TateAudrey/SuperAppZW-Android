@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -77,6 +78,7 @@ fun ProfileDetailView(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val didSaveSuccessfully by viewModel.didSaveSuccessfully.collectAsState()
     val showImageSourceSheet by viewModel.showImageSourceSheet.collectAsState()
+    val countryCode by viewModel.countryCode.collectAsState()
 
     // Load profile + provinces in parallel on first composition
     // Mirrors: async let profile = viewModel.loadProfile()
@@ -192,17 +194,77 @@ fun ProfileDetailView(
                     placeholder = "Suburb",
                 )
                 SectionDivider()
-                ProfileTextField(
-                    value = phoneNumber,
-                    onValueChange = viewModel::onPhoneNumberChange,
-                    placeholder = "Phone Number",
-                    keyboardType = KeyboardType.Phone,
-                )
-                SectionDivider()
                 EmailTextField(
                     value = emailAddress
                 )
             }
+
+            // ── Phone number ──────────────────────────────────────────────────
+            FormSection(title = "PHONE NUMBER") {
+                Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    // Country code
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "+",
+                            fontSize = 16.sp,
+                            color = Color(0xFF1A1A1A),
+                        )
+                        OutlinedTextField(
+                            value = countryCode,
+                            onValueChange = viewModel::onCountryCodeChange,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                            ),
+                            modifier = Modifier.width(72.dp),
+                        )
+                    }
+
+                    // Divider
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .height(24.dp)
+                            .width(1.dp),
+                        color = Color(0xFFE0E0E0),
+                    )
+
+                    // Local number
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = viewModel::onPhoneNumberChange,
+                        placeholder = { Text("Phone Number", color = Color(0xFFBDBDBD)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                        ),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+// ── Phone footer ──────────────────────────────────────────────────
+            Text(
+                text = "Format: country code followed by your local number, without the leading zero. " +
+                        "Your phone number is visible to customers so they can contact you directly " +
+                        "via WhatsApp about your listed products and services.",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                lineHeight = 18.sp,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
 
             // ── Location ──────────────────────────────────────────────────────
             val provinces by provinceViewModel.provinces.collectAsState()

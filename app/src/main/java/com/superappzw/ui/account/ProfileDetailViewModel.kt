@@ -60,9 +60,15 @@ class ProfileDetailViewModel : ViewModel() {
     private val _isFormValid = MutableStateFlow(false)
     val isFormValid: StateFlow<Boolean> = _isFormValid.asStateFlow()
 
+    private val _countryCode = MutableStateFlow("263")
+    val countryCode: StateFlow<String> = _countryCode.asStateFlow()
+
+    fun onCountryCodeChange(value: String) { _countryCode.value = value; updateFormValidity() }
+
     private fun updateFormValidity() {
         _isFormValid.value = _firstName.value.isNotBlank() &&
                 _lastName.value.isNotBlank() &&
+                _countryCode.value.isNotBlank() &&
                 _phoneNumber.value.isNotBlank() &&
                 _location.value.isNotBlank() &&
                 _suburb.value.isNotBlank() &&
@@ -119,6 +125,17 @@ class ProfileDetailViewModel : ViewModel() {
                 _suburb.value = profile.suburb
                 _location.value = profile.location
                 _phoneNumber.value = profile.phoneNumber
+
+                // Parse country code from stored number
+                val digits = profile.phoneNumber.filter { it.isDigit() }
+                if (digits.startsWith("263")) {
+                    _countryCode.value = "263"
+                    _phoneNumber.value = "0" + digits.drop(3)
+                } else if (digits.length > 3) {
+                    _countryCode.value = digits.take(3)
+                    _phoneNumber.value = digits.drop(3)
+                }
+
                 _emailAddress.value = profile.emailAddress
                 _virtualShopName.value = profile.virtualShopName
                 _profileImageURL.value = profile.profileImageURL
@@ -155,7 +172,7 @@ class ProfileDetailViewModel : ViewModel() {
                     lastName = _lastName.value,
                     suburb = _suburb.value,
                     location = _location.value,
-                    phoneNumber = _phoneNumber.value,
+                    phoneNumber = "+${_countryCode.value}${_phoneNumber.value.trimStart('0')}",
                     virtualShopName = _virtualShopName.value,
                 )
                 _didSaveSuccessfully.value = true
