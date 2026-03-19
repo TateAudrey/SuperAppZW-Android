@@ -64,8 +64,8 @@ fun PackageStatusCard(
     ) {
         when {
 
-            // ── Loading ───────────────────────────────────────────────────────
-            isLoading -> {
+            // ── Loading — only shown on first load when nothing is cached ─────
+            isLoading && currentPackage == null -> {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),

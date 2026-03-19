@@ -11,6 +11,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+object PackageCache {
+    var cachedPackageInfo: CurrentPackageInfo? = null
+
+    fun clear() {
+        cachedPackageInfo = null
+    }
+}
+
+// ── ViewModel ─────────────────────────────────────────────────────────────────
+
 class PackageStatusViewModel : ViewModel() {
 
     private val _currentPackage = MutableStateFlow<CurrentPackageInfo?>(null)
@@ -39,14 +49,28 @@ class PackageStatusViewModel : ViewModel() {
     // ── Load current package ──────────────────────────────────────────────────
 
     fun load() {
-        viewModelScope.launch {
+        // ── Seed from cache instantly — no spinner on repeat visits ──────────
+        PackageCache.cachedPackageInfo?.let { cached ->
+            _currentPackage.value = cached
+            updateComputedValues(cached)
+        }
+
+        // ── Only show spinner if nothing cached yet ───────────────────────────
+        if (_currentPackage.value == null) {
             _isLoading.value = true
+        }
+
+        viewModelScope.launch {
             try {
-                val info = service.fetchCurrentPackageInfo()
-                _currentPackage.value = info
-                updateComputedValues(info)
+                val fresh = service.fetchCurrentPackageInfo()
+                PackageCache.cachedPackageInfo = fresh  // ← update cache
+                _currentPackage.value = fresh
+                updateComputedValues(fresh)
             } catch (e: Exception) {
-                _errorMessage.value = e.message
+                // Only show error if we have nothing to display
+                if (_currentPackage.value == null) {
+                    _errorMessage.value = e.message
+                }
             } finally {
                 _isLoading.value = false
             }
@@ -62,7 +86,8 @@ class PackageStatusViewModel : ViewModel() {
             try {
                 val result = service.activatePackage(packageID)
                 _activationSuccess.value = result
-                load() // reload to reflect new package in UI
+                PackageCache.clear()  // ← invalidate cache on activation
+                load()
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             } finally {
