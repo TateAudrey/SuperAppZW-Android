@@ -19,8 +19,6 @@ class AuthStateManager(private val application: Application) : AndroidViewModel(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    // null  = gate check not yet run (shows PreLoadView)
-    // non-null = gate check complete (shows the appropriate screen)
     private val _gateStatus = MutableStateFlow<AppTermsService.GateStatus?>(null)
     val gateStatus: StateFlow<AppTermsService.GateStatus?> = _gateStatus.asStateFlow()
 
@@ -35,6 +33,21 @@ class AuthStateManager(private val application: Application) : AndroidViewModel(
 
     private val _currentUserPhotoUrl = MutableStateFlow<String?>(null)
     val currentUserPhotoUrl: StateFlow<String?> = _currentUserPhotoUrl.asStateFlow()
+
+    // ── Guest state ───────────────────────────────────────────────────────────
+
+    private val _isGuest = MutableStateFlow(false)
+    val isGuest: StateFlow<Boolean> = _isGuest.asStateFlow()
+
+    fun continueAsGuest() {
+        _isGuest.value = true
+    }
+
+    fun exitGuestMode() {
+        _isGuest.value = false
+    }
+
+    // ── Internals ─────────────────────────────────────────────────────────────
 
     private val auth = FirebaseAuth.getInstance()
     private val languageService = DailyLanguageService()
@@ -51,16 +64,18 @@ class AuthStateManager(private val application: Application) : AndroidViewModel(
         authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             val user = firebaseAuth.currentUser
             if (user != null) {
+                _isGuest.value = false  // ← clear guest mode on sign in
                 _authState.value = AuthState.Authenticated(user.uid)
                 _currentUserPhotoUrl.value = user.photoUrl?.toString()
                 viewModelScope.launch {
                     fetchDailyLanguage()
                     fetchUserName(user.uid)
-                    checkGate() // ← run gate immediately on auth
+                    checkGate()
                 }
             } else {
+                _isGuest.value = false  // ← clear guest mode on sign out
                 _authState.value = AuthState.Unauthenticated
-                _gateStatus.value = null // reset on sign-out
+                _gateStatus.value = null
                 _currentUserName.value = null
                 _currentUserPhotoUrl.value = null
                 _dailyLanguage.value = null
@@ -69,7 +84,6 @@ class AuthStateManager(private val application: Application) : AndroidViewModel(
         auth.addAuthStateListener(authStateListener!!)
     }
 
-    // Called after UpdatedTermsView acknowledges, and on sign-in
     fun checkGate() {
         viewModelScope.launch {
             _gateStatus.value = AppTermsService.shared.checkGateStatus(application)

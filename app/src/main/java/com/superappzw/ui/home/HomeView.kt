@@ -169,7 +169,7 @@ fun HomeView(
 private fun HomeViewWithLanguagePreview() {
     SuperAppZWTheme {
         HomeView(
-            currentUserName = "Tatenda Moyo",
+            currentUserName = "Tatenda Charks",
             currentUserPhotoUrl = null,
             dailyLanguage = DailyLanguageModel(
                 languageID = "ChiShona",
@@ -185,7 +185,7 @@ private fun HomeViewWithLanguagePreview() {
 private fun HomeViewLoadingPreview() {
     SuperAppZWTheme {
         HomeView(
-            currentUserName = "Tatenda Moyo",
+            currentUserName = "Tatenda Charks",
             dailyLanguage = null,
         )
     }

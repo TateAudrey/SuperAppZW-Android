@@ -18,31 +18,41 @@ class ReviewService {
     // ── Fetch reviews for a store ─────────────────────────────────────────────
 
     suspend fun fetchReviews(storeID: String): List<StoreReviewModel> {
-        val snapshot = db
-            .collection("user-reviews")
-            .document(storeID)
-            .collection("reviews")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .get()
-            .await()
-
-        return snapshot.documents.mapNotNull { doc ->
-            doc.toStoreReviewModel()?.copy(id = doc.id)
+        // user-reviews requires auth — guests get an empty list, matching iOS behaviour
+        if (auth.currentUser == null) return emptyList()
+        return try {
+            val snapshot = db
+                .collection("user-reviews")
+                .document(storeID)
+                .collection("reviews")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            snapshot.documents.mapNotNull { doc ->
+                doc.toStoreReviewModel()?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
     // ── Fetch aggregate rating ────────────────────────────────────────────────
 
     suspend fun fetchRatingAggregate(storeID: String): StoreRatingAggregate? {
-        val doc = db
-            .collection("user-reviews")
-            .document(storeID)
-            .collection("aggregates")
-            .document("rating")
-            .get()
-            .await()
-
-        return doc.toStoreRatingAggregate()
+        // user-reviews requires auth — guests get null, matching iOS behaviour
+        if (auth.currentUser == null) return null
+        return try {
+            val doc = db
+                .collection("user-reviews")
+                .document(storeID)
+                .collection("aggregates")
+                .document("rating")
+                .get()
+                .await()
+            doc.toStoreRatingAggregate()
+        } catch (e: Exception) {
+            null
+        }
     }
 
     // ── Has current user already reviewed ─────────────────────────────────────

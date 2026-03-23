@@ -30,30 +30,36 @@ fun AppNavigation(
     val navController = rememberNavController()
     val authState  by authStateManager.authState.collectAsState()
     val gateStatus by authStateManager.gateStatus.collectAsState()
+    val isGuest    by authStateManager.isGuest.collectAsState()
 
-    // ── Network alert state ───────────────────────────────────────────────────
+    // ── Network alert ─────────────────────────────────────────────────────────
     val networkMonitor      = remember { authStateManager.networkMonitor }
     val showNoInternetAlert by networkMonitor.showNoConnectionAlert.collectAsState()
 
-    // ── Auth-level navigation ─────────────────────────────────────────────────
-    // Mirrors RootView's .onChange(of: appSession.isAuthenticated)
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Authenticated -> {
+    // ── Navigation driven by auth + guest state ───────────────────────────────
+    LaunchedEffect(authState, isGuest) {
+        when {
+            // Guest takes priority over unauthenticated
+            isGuest -> {
+                navController.navigate("guest") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+            authState is AuthState.Authenticated -> {
                 navController.navigate("authenticated") {
                     popUpTo(0) { inclusive = true }
                 }
             }
-            is AuthState.Unauthenticated -> {
+            authState is AuthState.Unauthenticated -> {
                 navController.navigate("onboarding") {
                     popUpTo(0) { inclusive = true }
                 }
             }
-            is AuthState.Loading -> Unit
+            else -> Unit
         }
     }
 
-    // ── No internet alert — mirrors Swift's .alert("No Internet Connection") ──
+    // ── No internet alert ─────────────────────────────────────────────────────
     if (showNoInternetAlert) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { networkMonitor.dismissAlert() },
@@ -62,9 +68,7 @@ fun AppNavigation(
             confirmButton = {
                 androidx.compose.material3.TextButton(
                     onClick = { networkMonitor.dismissAlert() },
-                ) {
-                    Text("OK")
-                }
+                ) { Text("OK") }
             },
         )
     }
@@ -83,6 +87,7 @@ fun AppNavigation(
         composable("onboarding") {
             OnboardingScreen(
                 onGetStartedClick = { navController.navigate("getStarted") },
+                onBrowseAsGuest = { authStateManager.continueAsGuest() },
             )
         }
 
@@ -115,12 +120,27 @@ fun AppNavigation(
             )
         }
 
+        // ── Guest route — full app without auth-gated features ────────────────
+        composable("guest") {
+            MainTabView(
+                onLogout = { authStateManager.logout() },
+                dailyLanguage = null,       // guests get no greeting
+                currentUserName = null,
+                currentUserPhotoUrl = null,
+                isGuest = true,
+                onSignInRequired = {
+                    // Exit guest mode and go to onboarding
+                    authStateManager.exitGuestMode()
+                    navController.navigate("onboarding") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         // ── Authenticated root — gate switch ──────────────────────────────────
-        // Mirrors RootView's switch on gateStatus
         composable("authenticated") {
             when (gateStatus) {
-
-                // null = gate check not yet complete — show PreLoadView
                 null -> PreLoadView()
 
                 GateStatus.FORCE_UPDATE -> ForceUpdateView()
@@ -130,16 +150,12 @@ fun AppNavigation(
                 GateStatus.SUSPENDED -> SuspendedAccountView()
 
                 GateStatus.UPDATED_TERMS -> UpdatedTermsView(
-                    onAcknowledged = {
-                        // Re-run gate after terms accepted —
-                        // mirrors UpdatedTermsView { Task { await checkGate() } }
-                        authStateManager.checkGate()
-                    },
+                    onAcknowledged = { authStateManager.checkGate() },
                 )
 
                 GateStatus.CLEAR -> {
-                    val dailyLanguage      by authStateManager.dailyLanguage.collectAsState()
-                    val currentUserName    by authStateManager.currentUserName.collectAsState()
+                    val dailyLanguage       by authStateManager.dailyLanguage.collectAsState()
+                    val currentUserName     by authStateManager.currentUserName.collectAsState()
                     val currentUserPhotoUrl by authStateManager.currentUserPhotoUrl.collectAsState()
 
                     MainTabView(
@@ -147,6 +163,8 @@ fun AppNavigation(
                         dailyLanguage = dailyLanguage,
                         currentUserName = currentUserName,
                         currentUserPhotoUrl = currentUserPhotoUrl,
+                        isGuest = false,
+                        onSignInRequired = {},  // not needed for authenticated users
                     )
                 }
             }

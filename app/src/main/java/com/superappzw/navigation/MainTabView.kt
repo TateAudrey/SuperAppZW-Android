@@ -37,6 +37,11 @@ import com.superappzw.ui.store.StoreProfileView
 import com.superappzw.ui.theme.IOSSystemBackground
 import com.superappzw.ui.theme.PrimaryColor
 import com.superappzw.ui.theme.SuperAppZWTheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.superappzw.ui.onboarding.GuestPromptReason
+import com.superappzw.ui.onboarding.GuestSignInPromptSheet
 
 // Routes where the bottom bar should be visible
 private val ROOT_ROUTES = setOf("home", "myListings", "favourites")
@@ -47,14 +52,19 @@ fun MainTabView(
     dailyLanguage: DailyLanguageModel? = null,
     currentUserName: String? = null,
     currentUserPhotoUrl: String? = null,
+    isGuest: Boolean = false,
+    onSignInRequired: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
 
-    // Show bottom bar only on root tab screens — mirrors iOS hiding on push
     val showBottomBar = currentRoute in ROOT_ROUTES
+
+    // ── Guest prompt state ────────────────────────────────────────────────────
+    var showGuestPrompt by remember { mutableStateOf(false) }
+    var guestPromptReason by remember { mutableStateOf(GuestPromptReason.MY_LISTINGS) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -63,15 +73,29 @@ fun MainTabView(
                 NavigationBar(containerColor = IOSSystemBackground) {
                     MainTab.entries.forEach { tab ->
                         val tabRoute = tab.route
+                        val isSelected = currentRoute == tabRoute && !isGuest ||
+                                currentRoute == tabRoute && tab == MainTab.HOME
+
                         NavigationBarItem(
-                            selected = currentRoute == tabRoute,
+                            selected = if (isGuest) tabRoute == "home" && currentRoute == "home"
+                            else currentRoute == tabRoute,
                             onClick = {
-                                if (currentRoute != tabRoute) {
-                                    navController.navigate(tabRoute) {
-                                        // Pop up to home so back stack doesn't grow
-                                        popUpTo("home") { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
+                                when {
+                                    // Guests tapping My Listings or Favourites see prompt
+                                    isGuest && tabRoute == "myListings" -> {
+                                        guestPromptReason = GuestPromptReason.MY_LISTINGS
+                                        showGuestPrompt = true
+                                    }
+                                    isGuest && tabRoute == "favourites" -> {
+                                        guestPromptReason = GuestPromptReason.FAVOURITES
+                                        showGuestPrompt = true
+                                    }
+                                    currentRoute != tabRoute -> {
+                                        navController.navigate(tabRoute) {
+                                            popUpTo("home") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
                                     }
                                 }
                             },
@@ -99,20 +123,28 @@ fun MainTabView(
         ) {
 
             // ── Root tabs ─────────────────────────────────────────────────────
-            composable("home") { backStackEntry ->
+            composable("home") {
                 HomeView(
                     onLogout = onLogout,
                     dailyLanguage = dailyLanguage,
                     currentUserName = currentUserName,
                     currentUserPhotoUrl = currentUserPhotoUrl,
-                    onProfileTap = { navController.navigate("account") },
+                    onProfileTap = {
+                        if (isGuest) {
+                            guestPromptReason = GuestPromptReason.ACCOUNT
+                            showGuestPrompt = true
+                        } else {
+                            navController.navigate("account")
+                        }
+                    },
                     onCategorySelect = { category ->
                         val index = CategoryItem.all.indexOf(category)
                         if (index >= 0) navController.navigate("categoryDetail/$index")
                     },
                     onListingTap = { itemCode, ownerUserID ->
-                        val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
-                        if (ownerUserID == currentUserID) {
+                        // Guests can view store profiles freely
+                        val currentUserID = try { FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
+                        if (!isGuest && ownerUserID == currentUserID) {
                             navController.navigate("myListings") {
                                 popUpTo("home") { saveState = true }
                                 launchSingleTop = true
@@ -123,8 +155,8 @@ fun MainTabView(
                         }
                     },
                     onStoreTap = { userID ->
-                        val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
-                        if (userID == currentUserID) {
+                        val currentUserID = try { FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
+                        if (!isGuest && userID == currentUserID) {
                             navController.navigate("myListings") {
                                 popUpTo("home") { saveState = true }
                                 launchSingleTop = true
@@ -142,17 +174,23 @@ fun MainTabView(
             }
 
             composable("myListings") {
-                MyListingsView(
-                    navController = navController,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // Guests should never reach here — guarded at tab tap level
+                if (!isGuest) {
+                    MyListingsView(
+                        navController = navController,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             composable("favourites") {
-                FavouritesView(
-                    navController = navController,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // Guests should never reach here — guarded at tab tap level
+                if (!isGuest) {
+                    FavouritesView(
+                        navController = navController,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             composable("myReviews") {
@@ -169,8 +207,8 @@ fun MainTabView(
                 CategoryDetailView(
                     category = category,
                     onListingTap = { itemCode, ownerUserID ->
-                        val currentUserID = FirebaseAuth.getInstance().currentUser?.uid
-                        if (ownerUserID == currentUserID) {
+                        val currentUserID = try { FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
+                        if (!isGuest && ownerUserID == currentUserID) {
                             navController.navigate("myListings") {
                                 popUpTo("home") { saveState = true }
                                 launchSingleTop = true
@@ -185,7 +223,10 @@ fun MainTabView(
             }
 
             composable("account") {
-                AccountView(navController = navController)
+                // Guard — guests should never reach this via navigation
+                if (!isGuest) {
+                    AccountView(navController = navController)
+                }
             }
 
             composable("profileDetail") {
@@ -200,6 +241,11 @@ fun MainTabView(
                     ?: return@composable
                 StoreProfileView(
                     storeID = ownerUserID,
+                    isGuest = isGuest,
+                    onGuestSignInRequired = { reason ->
+                        guestPromptReason = reason
+                        showGuestPrompt = true
+                    },
                     onNavigateToListing = { listing ->
                         navController.navigate("listingDetail/${listing.itemCode}/${listing.ownerUserID}")
                     },
@@ -224,9 +270,26 @@ fun MainTabView(
                 StoreListingDetailView(
                     itemCode    = itemCode,
                     ownerUserID = ownerUserID,
+                    isGuest = isGuest,
+                    onGuestSignInRequired = { reason ->
+                        guestPromptReason = reason
+                        showGuestPrompt = true
+                    },
                 )
             }
         }
+    }
+
+    // ── Guest sign-in prompt sheet ────────────────────────────────────────────
+    if (showGuestPrompt) {
+        GuestSignInPromptSheet(
+            reason = guestPromptReason,
+            onSignIn = {
+                showGuestPrompt = false
+                onSignInRequired()
+            },
+            onDismiss = { showGuestPrompt = false },
+        )
     }
 }
 

@@ -50,12 +50,15 @@ import coil.compose.SubcomposeAsyncImage
 import com.superappzw.services.ListingService
 import com.superappzw.ui.components.utils.abbreviated
 import com.superappzw.ui.components.utils.formattedPrice
+import com.superappzw.ui.onboarding.GuestPromptReason
 import com.superappzw.ui.theme.PrimaryColor
 
 @Composable
 fun StoreListingDetailView(
     itemCode: String,
     ownerUserID: String,
+    isGuest: Boolean = false,
+    onGuestSignInRequired: ((GuestPromptReason) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: StoreListingDetailViewModel = viewModel(),
 ) {
@@ -85,10 +88,18 @@ fun StoreListingDetailView(
         }
         listing != null -> {
             StoreListingDetailContent(
-                listing      = listing!!,
+                listing = listing!!,
                 isFavourited = isFavourited,
-                onFavouriteToggle = { viewModel.toggleFavourite() },
-                modifier     = modifier,
+                isGuest = isGuest,
+                onFavouriteToggle = {
+                    if (isGuest) {
+                        // Guest taps favourite — show sign-in prompt
+                        onGuestSignInRequired?.invoke(GuestPromptReason.FAVOURITES)
+                    } else {
+                        viewModel.toggleFavourite()
+                    }
+                },
+                modifier = modifier,
             )
         }
     }
@@ -100,6 +111,7 @@ fun StoreListingDetailView(
 private fun StoreListingDetailContent(
     listing: StoreListing,
     isFavourited: Boolean,
+    isGuest: Boolean = false,
     onFavouriteToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -111,6 +123,7 @@ private fun StoreListingDetailContent(
         label = "heartTint",
     )
 
+    // Always record view — guests contribute to view counts too
     LaunchedEffect(listing.itemCode) {
         listingService.recordView(
             itemCode    = listing.itemCode,
@@ -151,10 +164,7 @@ private fun StoreListingDetailContent(
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(Color(0xFFE5E5EA)),
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
-                                color = PrimaryColor,
-                            )
+                            CircularProgressIndicator(modifier = Modifier.size(32.dp), color = PrimaryColor)
                         }
                     },
                     error = {
@@ -177,6 +187,7 @@ private fun StoreListingDetailContent(
                 )
             }
 
+            // ── Favourite button — gated for guests ───────────────────────────
             IconButton(
                 onClick = onFavouriteToggle,
                 modifier = Modifier
@@ -187,9 +198,11 @@ private fun StoreListingDetailContent(
                     .background(Color.Black.copy(alpha = 0.35f)),
             ) {
                 Icon(
-                    imageVector = if (isFavourited) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isFavourited) "Unfavourite" else "Favourite",
-                    tint = heartTint,
+                    // Guests always see unfilled heart since they have no favourites
+                    imageVector = if (!isGuest && isFavourited) Icons.Filled.Favorite
+                    else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (!isGuest && isFavourited) "Unfavourite" else "Favourite",
+                    tint = if (!isGuest && isFavourited) Color.Red else Color.White,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -204,7 +217,7 @@ private fun StoreListingDetailContent(
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.weight(1f),  // ← constrain title column
+                modifier = Modifier.weight(1f),
             ) {
                 Text(
                     text = listing.title,
@@ -214,7 +227,6 @@ private fun StoreListingDetailContent(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -225,15 +237,11 @@ private fun StoreListingDetailContent(
                         tint = Color.Gray,
                         modifier = Modifier.size(13.dp),
                     )
-                    Text(
-                        text = listing.viewCount.abbreviated(),
-                        fontSize = 13.sp,
-                        color = Color.Gray,
-                    )
+                    Text(text = listing.viewCount.abbreviated(), fontSize = 13.sp, color = Color.Gray)
                 }
             }
 
-            Spacer(modifier = Modifier.size(12.dp))  // ← fixed gap, not weight
+            Spacer(modifier = Modifier.size(12.dp))
 
             Text(
                 text = buildAnnotatedString {
@@ -256,12 +264,7 @@ private fun StoreListingDetailContent(
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
             Text(text = "Code:", fontSize = 13.sp, color = Color.Gray)
-            Text(
-                text = listing.itemCode,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Gray,
-            )
+            Text(text = listing.itemCode, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray)
         }
 
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -271,12 +274,7 @@ private fun StoreListingDetailContent(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
-            Text(
-                text = "Description",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Black,
-            )
+            Text(text = "Description", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
             Text(
                 text = listing.description.ifBlank { "No description provided." },
                 fontSize = 15.sp,

@@ -46,6 +46,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.superappzw.model.StoreReviewModel
 import com.superappzw.ui.components.utils.EmptyStateView
 import com.superappzw.ui.lisitngs.ListingsGridView
+import com.superappzw.ui.onboarding.GuestPromptReason
 import com.superappzw.ui.reviews.PostReviewSheet
 import com.superappzw.ui.reviews.ReviewViewModel
 import com.superappzw.ui.theme.PrimaryColor
@@ -56,32 +57,32 @@ import com.superappzw.ui.theme.SuperAppZWTheme
 fun StoreProfileView(
     storeID: String,
     onNavigateToListing: (StoreListing) -> Unit = {},
+    isGuest: Boolean = false,
+    onGuestSignInRequired: ((GuestPromptReason) -> Unit)? = null,
     storeProfileViewModel: StoreProfileViewModel = viewModel(),
     reviewViewModel: ReviewViewModel = viewModel(),
 ) {
-    // Wrap FirebaseAuth call in a try-catch to avoid crashes in Preview environments
     val currentUserID = try { FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
 
-    val storeName by storeProfileViewModel.storeName.collectAsState()
-    val ownerName by storeProfileViewModel.ownerName.collectAsState()
-    val suburb by storeProfileViewModel.suburb.collectAsState()
-    val location by storeProfileViewModel.location.collectAsState()
+    val storeName       by storeProfileViewModel.storeName.collectAsState()
+    val ownerName       by storeProfileViewModel.ownerName.collectAsState()
+    val suburb          by storeProfileViewModel.suburb.collectAsState()
+    val location        by storeProfileViewModel.location.collectAsState()
     val profileImageURL by storeProfileViewModel.profileImageURL.collectAsState()
-    val ownerUID by storeProfileViewModel.ownerUID.collectAsState()
-    val products by storeProfileViewModel.products.collectAsState()
-    val services by storeProfileViewModel.services.collectAsState()
-    val isLoading by storeProfileViewModel.isLoading.collectAsState()
-    val phoneNumber by storeProfileViewModel.phoneNumber.collectAsState()
+    val ownerUID        by storeProfileViewModel.ownerUID.collectAsState()
+    val products        by storeProfileViewModel.products.collectAsState()
+    val services        by storeProfileViewModel.services.collectAsState()
+    val isLoading       by storeProfileViewModel.isLoading.collectAsState()
+    val phoneNumber     by storeProfileViewModel.phoneNumber.collectAsState()
 
-    val hasReviewed by reviewViewModel.hasReviewed.collectAsState()
-    val isSubmitting by reviewViewModel.isSubmitting.collectAsState()
-    val submitSuccess by reviewViewModel.submitSuccess.collectAsState()
+    val hasReviewed        by reviewViewModel.hasReviewed.collectAsState()
+    val isSubmitting       by reviewViewModel.isSubmitting.collectAsState()
+    val submitSuccess      by reviewViewModel.submitSuccess.collectAsState()
     val reviewErrorMessage by reviewViewModel.errorMessage.collectAsState()
-    val reviews by reviewViewModel.reviews.collectAsState()
-    val averageRating by reviewViewModel.averageRating.collectAsState()
-    val totalReviews by reviewViewModel.totalReviews.collectAsState()
+    val reviews            by reviewViewModel.reviews.collectAsState()
+    val averageRating      by reviewViewModel.averageRating.collectAsState()
+    val totalReviews       by reviewViewModel.totalReviews.collectAsState()
 
-    // Load both ViewModels on first composition — mirrors Swift's .task { }
     LaunchedEffect(storeID) {
         storeProfileViewModel.load(storeID)
         reviewViewModel.load(storeID)
@@ -107,6 +108,8 @@ fun StoreProfileView(
         reviews = reviews,
         averageRating = averageRating,
         totalReviews = totalReviews,
+        isGuest = isGuest,
+        onGuestSignInRequired = onGuestSignInRequired,
         onNavigateToListing = onNavigateToListing,
         onSubmitReview = { rating, comment ->
             reviewViewModel.submitReview(
@@ -118,9 +121,6 @@ fun StoreProfileView(
     )
 }
 
-/**
- * A stateless version of StoreProfileView that can be rendered in Previews.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StoreProfileContent(
@@ -143,6 +143,8 @@ private fun StoreProfileContent(
     reviews: List<StoreReviewModel>,
     averageRating: Double,
     totalReviews: Int,
+    isGuest: Boolean = false,
+    onGuestSignInRequired: ((GuestPromptReason) -> Unit)? = null,
     onNavigateToListing: (StoreListing) -> Unit,
     onSubmitReview: (Int, String) -> Unit,
 ) {
@@ -151,7 +153,6 @@ private fun StoreProfileContent(
     var selectedTab by rememberSaveable { mutableStateOf(StoreTab.PRODUCTS) }
     var showPostReview by remember { mutableStateOf(false) }
 
-    // Auto-dismiss PostReviewSheet on successful submission
     LaunchedEffect(submitSuccess) {
         if (submitSuccess) showPostReview = false
     }
@@ -169,9 +170,15 @@ private fun StoreProfileContent(
                     },
                     actions = {
                         if (selectedTab == StoreTab.REVIEWS) {
-                            // Show pencil only if viewing someone else's store
+                            // Show review button only for other users' stores
                             if (storeID != currentUserID) {
-                                IconButton(onClick = { showPostReview = true }) {
+                                IconButton(onClick = {
+                                    if (isGuest) {
+                                        onGuestSignInRequired?.invoke(GuestPromptReason.REVIEW)
+                                    } else {
+                                        showPostReview = true
+                                    }
+                                }) {
                                     Icon(
                                         imageVector = if (hasReviewed) Icons.Outlined.EditNote
                                         else Icons.Filled.Edit,
@@ -182,25 +189,31 @@ private fun StoreProfileContent(
                                 }
                             }
                         } else {
-                            // WhatsApp button — disabled until phone number is loaded
+                            // WhatsApp — guests see prompt, authenticated users open WhatsApp
                             IconButton(
-                                onClick = { openWhatsApp(phoneNumber, storeName, context) },
-                                enabled = !phoneNumber.isNullOrBlank(),
+                                onClick = {
+                                    if (isGuest) {
+                                        onGuestSignInRequired?.invoke(GuestPromptReason.CONTACT)
+                                    } else {
+                                        openWhatsApp(phoneNumber, storeName, context)
+                                    }
+                                },
+                                // Guests always enabled (shows prompt)
+                                // Authenticated users disabled until phone loaded
+                                enabled = isGuest || !phoneNumber.isNullOrBlank(),
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Phone,
                                     contentDescription = "Contact via WhatsApp",
-                                    tint = if (!phoneNumber.isNullOrBlank()) Color(0xFF34C759) else Color.Gray,
+                                    tint = if (isGuest || !phoneNumber.isNullOrBlank())
+                                        Color(0xFF34C759) else Color.Gray,
                                 )
                             }
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White,
-                    ),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
                 )
 
-                // ── Tab bar pinned below the top app bar ──────────────────────
                 Column {
                     StoreTabBar(
                         selectedTab = selectedTab,
@@ -220,7 +233,6 @@ private fun StoreProfileContent(
                 .padding(innerPadding)
                 .padding(top = 16.dp, bottom = 30.dp),
         ) {
-            // ── Store profile header ───────────────────────────────────────────
             StoreProfileHeader(
                 storeName = storeName,
                 ownerName = ownerName,
@@ -229,7 +241,6 @@ private fun StoreProfileContent(
                 profileImageURL = profileImageURL,
             )
 
-            // ── Tab content ───────────────────────────────────────────────────
             when (selectedTab) {
                 StoreTab.PRODUCTS -> ProductsTab(
                     isLoading = isLoading,
@@ -247,7 +258,7 @@ private fun StoreProfileContent(
         }
     }
 
-    // ── Post review sheet ─────────────────────────────────────────────────────
+    // Post review sheet — only for authenticated users
     if (showPostReview) {
         PostReviewSheet(
             storeOwnerUID = ownerUID,
@@ -275,7 +286,6 @@ private fun openWhatsApp(phoneNumber: String?, storeName: String, context: Conte
     val cleanedNumber = phoneNumber.trim().replace(" ", "")
     val url = "https://wa.me/$cleanedNumber?text=$encoded"
 
-    // Try opening in the WhatsApp app first, fall back to browser (wa.me works in Safari/Chrome)
     val whatsAppIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
         setPackage("com.whatsapp")
     }
@@ -283,7 +293,6 @@ private fun openWhatsApp(phoneNumber: String?, storeName: String, context: Conte
     try {
         context.startActivity(whatsAppIntent)
     } catch (e: ActivityNotFoundException) {
-        // WhatsApp not installed — open in browser
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 }
@@ -300,29 +309,19 @@ private fun ProductsTab(
         isLoading -> {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 60.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 60.dp),
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
-                    color = PrimaryColor,
-                )
+                CircularProgressIndicator(modifier = Modifier.size(32.dp), color = PrimaryColor)
             }
         }
         products.isEmpty() -> {
-            EmptyStateView(
-                icon = Icons.Outlined.Inbox,
-                message = "No products listed yet",
-            )
+            EmptyStateView(icon = Icons.Outlined.Inbox, message = "No products listed yet")
         }
         else -> {
             val listingMap = remember(products) { products.associateBy { it.itemCode } }
             ListingsGridView(
                 listings = products,
-                onTap = { itemCode, _ ->
-                    listingMap[itemCode]?.let { onNavigateToListing(it) }
-                },
+                onTap = { itemCode, _ -> listingMap[itemCode]?.let { onNavigateToListing(it) } },
             )
         }
     }
@@ -344,26 +343,8 @@ private fun StoreProfileViewPreview() {
             profileImageURL = null,
             ownerUID = "preview_id",
             products = listOf(
-                StoreListing(
-                    title = "Sample Product 1",
-                    description = "Description 1",
-                    price = 100.0,
-                    currency = "USD",
-                    itemCode = "P1",
-                    imageURL = null,
-                    viewCount = 10,
-                    ownerUserID = "preview_id"
-                ),
-                StoreListing(
-                    title = "Sample Product 2",
-                    description = "Description 2",
-                    price = 50.0,
-                    currency = "USD",
-                    itemCode = "P2",
-                    imageURL = null,
-                    viewCount = 5,
-                    ownerUserID = "preview_id"
-                )
+                StoreListing(title = "Sample Product 1", description = "Description 1", price = 100.0, currency = "USD", itemCode = "P1", imageURL = null, viewCount = 10, ownerUserID = "preview_id"),
+                StoreListing(title = "Sample Product 2", description = "Description 2", price = 50.0, currency = "USD", itemCode = "P2", imageURL = null, viewCount = 5, ownerUserID = "preview_id")
             ),
             services = listOf("Consulting", "Delivery", "Repair"),
             isLoading = false,
@@ -373,16 +354,8 @@ private fun StoreProfileViewPreview() {
             submitSuccess = false,
             reviewErrorMessage = null,
             reviews = listOf(
-                StoreReviewModel(
-                    reviewerName = "Alice",
-                    comment = "Great service!",
-                    rating = 5
-                ),
-                StoreReviewModel(
-                    reviewerName = "Bob",
-                    comment = "Good products.",
-                    rating = 4
-                )
+                StoreReviewModel(reviewerName = "Alice", comment = "Great service!", rating = 5),
+                StoreReviewModel(reviewerName = "Bob", comment = "Good products.", rating = 4)
             ),
             averageRating = 4.5,
             totalReviews = 2,

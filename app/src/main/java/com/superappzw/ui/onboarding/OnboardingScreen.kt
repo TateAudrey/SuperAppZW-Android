@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,57 +24,67 @@ import com.superappzw.R.drawable
 @Composable
 fun OnboardingScreen(
     modifier: Modifier = Modifier,
-    onGetStartedClick: () -> Unit
+    onGetStartedClick: () -> Unit,
+    onBrowseAsGuest: () -> Unit = {},  // ← new callback
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color.White),
         verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Logo
-
+        // ── Logo ──────────────────────────────────────────────────────────────
         Image(
             painter = painterResource(id = drawable.logo_text),
             contentDescription = "App Logo",
             modifier = Modifier
-                .padding(top = 32.dp)  // Top padding added
+                .padding(top = 32.dp)
                 .size(150.dp, 100.dp)
-                .clip(RoundedCornerShape(15.dp))
+                .clip(RoundedCornerShape(15.dp)),
         )
 
-
-        // Carousel
+        // ── Carousel ──────────────────────────────────────────────────────────
         OnboardingCarousel(
             cardWidth = 260,
-            spacing = 24
+            spacing = 24,
         )
 
-        // Tagline
+        // ── Tagline ───────────────────────────────────────────────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 24.dp)
+            modifier = Modifier.padding(horizontal = 24.dp),
         ) {
             Text(
                 text = "A hub that connects you to your clients",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
 
-        // CTA Button (does nothing for now)
+        // ── Get Started button ────────────────────────────────────────────────
         PrimaryActionButton(
             title = "Get Started",
             onClick = onGetStartedClick,
-            modifier = Modifier
-                .padding(horizontal = 32.dp)  // <-- add horizontal padding
+            modifier = Modifier.padding(horizontal = 32.dp),
         )
 
+        // ── Browse as Guest ───────────────────────────────────────────────────
+        TextButton(
+            onClick = onBrowseAsGuest,
+            modifier = Modifier.padding(bottom = 8.dp),
+        ) {
+            Text(
+                text = "Browse as Guest",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
